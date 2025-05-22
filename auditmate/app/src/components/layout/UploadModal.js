@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import { useState, useContext } from "react";
 import styled from "styled-components";
+
+import { FileContext } from "../../context/FileContext";
 
 import Button from "../common/Button";
 
@@ -55,17 +57,12 @@ const ButtonGroup = styled.div`
   gap: 10px;
 `;
 
-const UploadModal = ({ isOpen, onClose, onUpload }) => {
-  const [excelFile, setExcelFile] = useState(null);
-  const [attachmentFolder, setAttachmentFolder] = useState(null);
+const UploadModal = ({ isOpen, onClose }) => {
+  const { setExcelFile, setAttachmentFolder, handleUpload } = useContext(FileContext);
 
-  const handleUpload = () => {
-    if (excelFile && attachmentFolder) {
-      onUpload({ excelFile, attachmentFolder });
-      onClose();
-    } else {
-      alert("Excel 파일과 첨부파일 폴더를 선택하세요.");
-    }
+  const handleUploadAndClose = () => {
+    handleUpload();
+    onClose(); // 업로드 후 모달 닫기
   };
 
   return (
@@ -82,17 +79,17 @@ const UploadModal = ({ isOpen, onClose, onUpload }) => {
             />
           </InputContainer>
           <InputContainer>
-            <Label>검토 자료료 폴더</Label>
+            <Label>검토 자료 폴더</Label>
             <FileInput
               type="file"
-              webkitdirectory="true"
-              directory="true"
+              $webkitdirectory
+              $directory
               onChange={(e) => setAttachmentFolder(e.target.files)}
             />
           </InputContainer>
           <ButtonGroup>
             <Button onClick={onClose}>Cancel</Button>
-            <Button primary onClick={handleUpload}>Upload</Button>
+            <Button $primary onClick={handleUploadAndClose}>Upload</Button>
           </ButtonGroup>
         </ModalContent>
       </ModalOverlay>

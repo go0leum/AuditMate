@@ -11,7 +11,7 @@ const SidebarContainer = styled.div`
   padding: 36px 24px;
   width: 95px;
   height: 100vh;
-  background: #FFFFFF;
+  background: #FAFBFF;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -52,9 +52,9 @@ const Sidebar = () => {
         <LogoImage src={BrandLogo} alt="Brand Logo" />
       </LogoContainer>
       <MenuList>
-        <IconButton iconSrc={FolderIcon} path='/RecentFile/' />
-        <IconButton iconSrc={TableIcon} path={`/ReviewTable/${file_name}`}/>
-        <IconButton iconSrc={DocumentIcon} path={`/DocumentOCR/${file_name}`} />
+        <IconButton iconSrc={FolderIcon} path='/recentFile/' />
+        <IconButton iconSrc={TableIcon} path={`/reviewTable/${file_name}/`}/>
+        <IconButton iconSrc={DocumentIcon} path={`/documentOCR/${file_name}/`} />
       </MenuList>
     </SidebarContainer>
   );

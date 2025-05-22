@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import SearchIcon from '../../assets/icon/search icon.png';
 
 const Container = styled.div`
-  width: 299.01px;
+  width: 200px;
   height: 42.12px;
   padding: 8px 11px;
   background-color: #F9FBFF;

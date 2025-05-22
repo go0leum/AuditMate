@@ -4,7 +4,6 @@ const Container = styled.div`
   background: white;
   display: flex;
   width: 100%;
-  padding: 20px;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
@@ -12,10 +11,13 @@ const Container = styled.div`
 `;
 
 const ColumnContainer = styled.div`
+  width: calc(100% - 60px);
   justify-content: flex-start;
   align-items: center;
-  gap: 10px;
+  padding : 20px 20px;
   display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const ColumnItem = styled.div`
@@ -24,14 +26,21 @@ const ColumnItem = styled.div`
   justify-content: center;
   display: flex;
   flex-direction: column;
-  color: '#0647A9';
-  font-size: 13px;
+  color: #0647A9;
+  font-size: 15px;
   font-family: 'NanumGothic', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
 `;
 
-const Table = (columns, rows) => {
+const Line = styled.div`
+  width: calc(100% - 60px);
+  height: 0px;
+  outline: 1px solid #EEEEEE;
+  outline-offset: -0.5px;
+`;
+
+const Table = ({ columns, children }) => {
   return (
     <Container >
       <ColumnContainer>
@@ -41,7 +50,8 @@ const Table = (columns, rows) => {
           </ColumnItem>
         ))}
       </ColumnContainer>
-      {rows}
+      <Line />
+      {children}
     </Container>
     );
 };

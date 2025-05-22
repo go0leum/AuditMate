@@ -25,7 +25,7 @@ const Chevron = styled.div`
   position: absolute;
   right: 10px;
   top: 50%;
-  transform: ${({ isOpen }) => (isOpen ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%) rotate(0deg)')};
+  transform: ${({ $isOpen }) => ($isOpen ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%) rotate(0deg)')};
   transition: transform 0.3s ease;
 `;
 
@@ -35,7 +35,7 @@ const TextContainer = styled.div`
   top: 50%;
   transform: translateY(-50%);
   font-family: 'Poppins, sans-serif';
-  font-size: 12px;
+  font-size: 13px;
   color: #3D3C42;
   font-weight: 600;
 `;
@@ -61,8 +61,8 @@ const DropdownItem = styled.div`
   font-family: 'Poppins, sans-serif';
   font-size: 12px;
   color: #3D3C42;
-  font-weight: ${({ isSelected }) => (isSelected ? 600 : 400)};
-  background-color: ${({ isSelected }) => (isSelected ? '#E6F0FF' : 'transparent')};
+  font-weight: ${({ $isSelected }) => ($isSelected ? 600 : 400)};
+  background-color: ${({ $isSelected }) => ($isSelected ? '#E6F0FF' : 'transparent')};
   &:hover {
     background-color: #F0F0F0;
   }
@@ -99,14 +99,14 @@ const SortDropdown = ({ onChange, initialValue = 'date-asc' }) => {
   return (
     <Container ref={dropdownRef} onClick={() => setIsOpen((prev) => !prev)}>
       <Rectangle />
-      <Chevron isOpen={isOpen} />
+      <Chevron $isOpen={isOpen} />
       <TextContainer>{selectedOption.label}</TextContainer>
       {isOpen && (
         <DropdownList>
           {options.map(({ label, value }) => (
             <DropdownItem
               key={value}
-              isSelected={value === selectedValue}
+              $isSelected={value === selectedValue}
               onClick={() => {
                 setSelectedValue(value);
                 setIsOpen(false);

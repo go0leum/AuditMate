@@ -14,13 +14,13 @@ const ButtonStyled = styled.button`
   font-weight: 500;
   line-height: 20px;
   word-wrap: break-word;
-  background: ${(props) => (props.secondary ? '#CDDAEE' : '#0647A9')};
-  color: ${(props) => (props.secondary ? '#0647A9' : 'white')};
+  background: ${({ $secondary }) => ($secondary ? '#CDDAEE' : '#0647A9')}; /* 변경 */
+  color: ${({ $secondary }) => ($secondary ? '#0647A9' : 'white')}; /* 변경 */
 `;
 
 const Button = ({ children = 'Okay', onClick, secondary = false, ...props }) => {
   return (
-    <ButtonStyled onClick={onClick} secondary={secondary} {...props}>
+    <ButtonStyled onClick={onClick} $secondary={secondary} {...props}>
       {children}
     </ButtonStyled>
   );
