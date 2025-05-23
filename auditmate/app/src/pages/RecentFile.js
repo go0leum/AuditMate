@@ -47,8 +47,6 @@ const RowItem = styled.div`
   `}
 `;
 
-
-
 const RecentFile = () => {
   const { fileData, handleCheckboxChange, handleExport, selectedFiles } = useContext(FileContext);
   const { setSelectedXlsxFile } = useContext(TableContext);
@@ -70,7 +68,7 @@ const RecentFile = () => {
   const filteredData = searchTerm.trim()
     ? fileData.filter((file) =>
         Object.values(file).some((value) =>
-          typeof value === "string" && value.toLowerCase().includes(searchTerm.toLowerCase())
+          typeof value === "string" && value.toLowerCase().includes(searchTerm)
         )
       )
     : fileData; // 검색어가 없으면 전체 출력
@@ -111,11 +109,7 @@ const RecentFile = () => {
               </RowContainer>
             ))
           ) : (
-            <RowContainer style={{ justifyContent: 'center' }}>
-              <RowItem width={'calc(100% - 60px)'} style={{ textAlign: 'center', padding: '20px', color: '#777'}}>
-                파일이 없습니다.
-              </RowItem>
-            </RowContainer>
+            <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
           )}
         </Table>
       </BaseContainer>
