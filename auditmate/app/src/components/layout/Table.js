@@ -12,7 +12,6 @@ const Container = styled.div`
 
 const ColumnContainer = styled.div`
   width: calc(100% - 60px);
-  justify-content: flex-start;
   align-items: center;
   padding : 20px 20px;
   display: inline-flex;

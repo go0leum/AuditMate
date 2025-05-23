@@ -21,6 +21,22 @@ const TagText = styled.div`
   color: ${({ color }) => TAG_STYLES[color]?.text.color};
 `;
 
+const getTagColor = (label, value) => {
+  if (label === '증빙구분') {
+    if (value === '전자세금계산서') return 'blue';
+    if (value === '보조금전용카드') return 'green';
+    if (value === '기타') return 'grey';
+  }
+  if (label === '세목명') {
+    if (value === '인건비') return 'purple';
+    if (value === '일반수용비') return 'red';
+    if (value === '일반용역비') return 'blue';
+    if (value === '여비') return 'green';
+    if (value === '업무추진비') return 'yellow';
+    else return 'grey';
+  }
+};
+
 const TAG_STYLES = {
   blue: { wrapper: { background: '#CDDAEE', outline: '#ACC2E2' }, text: { color: '#0647A9' } },
   green: { wrapper: { background: '#D3DFCE', outline: '#B6CAAE' }, text: { color: '#255F0B' } },
@@ -30,12 +46,14 @@ const TAG_STYLES = {
   purple: { wrapper: { background: '#F7F5FF', outline: '#B6ABED' }, text: { color: '#4C34C2' } },
 };
 
-const Tag = ({ children, color = 'blue', ...props }) => {
+const Tag = ({ children, label, value, onClick, ...props }) => {
+  const color = getTagColor(label, value) || 'grey'; // fallback도 넣으면 좋아요
   return (
-    <TagWrapper color={color} {...props}>
+    <TagWrapper color={color} onClick={onClick} {...props}>
       <TagText color={color}>{children}</TagText>
     </TagWrapper>
   );
 };
+
 
 export default Tag;

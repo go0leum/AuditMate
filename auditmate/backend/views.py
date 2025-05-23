@@ -3,6 +3,7 @@ import json
 import datetime
 import zipfile
 import pandas as pd
+import numpy as np
 from django.http import JsonResponse, FileResponse, Http404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
@@ -153,6 +154,11 @@ def upload_files(request):
 
 @csrf_exempt
 def read_xlsx(request):
+    expected_columns = [
+        '집행실행일자', '증빙구분', '집행용도', '비목명', '세목명',
+        '거래처명', '예금주명', '집행금액', '검토내용', '메모', '보완사항'
+    ]
+
     if request.method == 'POST':
         try:
             body = json.loads(request.body)
@@ -168,9 +174,10 @@ def read_xlsx(request):
                 return JsonResponse({'status': 'error', 'message': 'File not found'}, status=404)
 
             df = pd.read_excel(file_path)
+            df.columns = df.columns.str.strip()
+            df = df.replace({np.nan: None})
             progress = calculate_progress(df)
 
-            # metadata.json 경로
             metadata_path = os.path.join(UPLOAD_DIR, folderName, "metadata.json")
             if os.path.exists(metadata_path):
                 try:
@@ -182,24 +189,38 @@ def read_xlsx(request):
                         json.dump(metadata, f, ensure_ascii=False, indent=4)
                 except Exception as e:
                     print(f"Metadata 업데이트 오류: {e}")
-            
-            expected_columns = [
-                '집행실행일자', '증빙구분', '집행용도', '비목명', '세목명',
-                '거래처명', '예금주명', '집행금액', '검토내용', '메모', '보완사항'
-            ]
 
             if list(df.columns) != expected_columns:
                 return JsonResponse({
                     'status': 'warning',
                     'message': '엑셀 파일의 컬럼명이 예상과 다릅니다. 컬럼명을 다음과 같이 수정해 주세요.',
+                    'data': None,
                     'expected_columns': expected_columns,
                     'actual_columns': list(df.columns)
-                }, status=200)
-            
+                }, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+
             data = df.to_dict(orient='records')
-            return JsonResponse({'status': 'success', 'data': data})
+            return JsonResponse({
+                'status': 'success',
+                'data': data,
+                'message': '엑셀 파일을 성공적으로 읽었습니다.',
+                'expected_columns': expected_columns,
+                'actual_columns': list(df.columns)
+            }, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
 
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+            return JsonResponse({
+                'status': 'error',
+                'data': None,
+                'message': str(e),
+                'expected_columns': expected_columns,
+                'actual_columns': [],
+            }, status=500, safe=False, json_dumps_params={'ensure_ascii': False})
 
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid request method',
+        'data': None,
+        'expected_columns': expected_columns,
+        'actual_columns': [],
+    }, status=405, safe=False, json_dumps_params={'ensure_ascii': False})
