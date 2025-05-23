@@ -205,3 +205,14 @@ sketch
 
 # and uncomment the following lines
 # .pnp.*
+
+# Uploaded files
+*Upload_File/*
+*.zip
+*.tar.gz
+*.xlsx
+*.xls
+*.csv
+*.json
+*.xml
+*.pdf
