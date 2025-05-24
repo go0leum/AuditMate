@@ -4,8 +4,6 @@ import IconButton from '../common/IconButton';
 
 import BrandLogo from '../../assets/icon/XWrist.jpg';
 import FolderIcon from '../../assets/icon/folder icon.png';
-import TableIcon from '../../assets/icon/table icon.png';
-import DocumentIcon from '../../assets/icon/document icon.png';
 
 const SidebarContainer = styled.div`
   padding: 36px 24px;
@@ -53,8 +51,6 @@ const Sidebar = () => {
       </LogoContainer>
       <MenuList>
         <IconButton iconSrc={FolderIcon} path='/recentFile/' />
-        <IconButton iconSrc={TableIcon} path={`/reviewTable/${file_name}/`}/>
-        <IconButton iconSrc={DocumentIcon} path={`/documentOCR/${file_name}/`} />
       </MenuList>
     </SidebarContainer>
   );
