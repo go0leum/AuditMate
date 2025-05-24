@@ -41,9 +41,6 @@ const MenuList = styled.div`
 `;
 
 const Sidebar = () => {
-  const location = useLocation();
-  const file_name = location.pathname.split('/')[2]
-
   return (
     <SidebarContainer>
       <LogoContainer>
