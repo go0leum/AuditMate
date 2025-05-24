@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import Tag from './Tag'; // Tag 컴포넌트 경로에 맞게 수정하세요
+import Tag from './Tag';
 
 const DropdownWrapper = styled.div`
   background: white;
@@ -22,7 +22,7 @@ const DropdownHeader = styled.div`
   font-family: 'NanumGothic', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
-  cursor: pointer; /* 전체 드롭다운 클릭 가능하도록 설정 */
+  cursor: pointer;
 `;
 
 const TagList = styled.div`
@@ -49,32 +49,36 @@ const OPTIONS_BY_LABEL = {
   증빙구분: ['전자세금계산서', '보조금전용카드', '기타'],
 };
 
-const TagDropdown = ({ label = '세목명', onSelect, defaultValue = null }) => {
-  const [selected, setSelected] = useState(defaultValue);
+const TagDropdown = ({ label = '세목명', onSelect, value = null }) => {
+  const [selected, setSelected] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const options = OPTIONS_BY_LABEL[label] || [];
 
   const handleSelect = (value) => {
     setSelected(value);
-    setIsOpen(false); // 선택 시 드롭다운 닫기
     if (onSelect) onSelect(value);
+    setIsOpen(false); // 선택 후 드롭다운 닫기
   };
 
-  // 바깥 클릭 감지하여 드롭다운 닫기 (mousedown → click 변경)
+  // 바깥 클릭 감지하여 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
+
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   return (
     <DropdownWrapper ref={dropdownRef}>
-      <DropdownHeader onClick={() => setIsOpen(!isOpen)}>
+      <DropdownHeader
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={() => setIsOpen(!isOpen)}
+      >
         {selected ? (
           <Tag label={label} value={selected}>
             {selected}
@@ -84,7 +88,7 @@ const TagDropdown = ({ label = '세목명', onSelect, defaultValue = null }) => 
         )}
       </DropdownHeader>
       {isOpen && (
-        <TagList>
+        <TagList onMouseDown={(e) => e.stopPropagation()}>
           {options.map((option) => (
             <Tag
               key={option}

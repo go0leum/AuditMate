@@ -8,9 +8,9 @@ import BaseContainer from '../components/layout/BaseContainer';
 import Table from '../components/layout/Table';
 import UploadModal from '../components/layout/UploadModal';
 import TagDropdown from '../components/common/TagDropdown';
+import Drawer from '../components/layout/Drawer';
 
 import Button from '../components/common/Button';
-import Tag from '../components/common/Tag';
 
 const RowContainer = styled.div`
   width: calc(100% - 60px);
@@ -18,7 +18,6 @@ const RowContainer = styled.div`
   padding: 20px 20px;
   display: inline-flex;
   justify-content: space-between;
-  align-items: center;
 `;
 
 const RowItem = styled.div`
@@ -45,7 +44,13 @@ const ReviewTable = () => {
   const { reviewTableData, setReviewTableData } = useContext(TableContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeDropdownIndex, setActiveDropdownIndex] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedRowIndex, setSelectedRowIndex] = useState(null);
+
+  const openDrawer = (index) => {
+    setSelectedRowIndex(index);
+    setDrawerOpen(true);
+  };
 
   const columns = [
     { label: '집행실행일자', width: 90 },
@@ -64,19 +69,19 @@ const ReviewTable = () => {
   const filteredData = searchTerm.trim()
     ? reviewTableData.filter((row) =>
         Object.values(row).some(
-          (value) => typeof value === 'string' && value.includes(searchTerm)
+          (value) =>
+            typeof value === 'string' &&
+            value.toLowerCase().includes(searchTerm.toLowerCase())
         )
       )
     : reviewTableData;
 
   const handleTagSelect = (index, label, selected) => {
-    setReviewTableData(prevData => {
-      const updated = [...prevData];
-      updated[index] = { ...updated[index], [label]: selected };
-      return updated;
-    });
-
-    setActiveDropdownIndex(null); // 드롭다운 닫기
+    setReviewTableData(prevData =>
+      prevData.map((row, rowIndex) =>
+        rowIndex === index ? { ...row, [label]: selected } : row
+      )
+    );
   };
 
   return (
@@ -97,10 +102,9 @@ const ReviewTable = () => {
           <Table columns={columns}>
             {filteredData.map((row, index) => (
               <div key={index} style={{ width: '100%', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
-                <RowContainer>
+                <RowContainer onClick={() => openDrawer(index)}>
                   {columns.map((column, colIndex) => {
                     const value = row[column.label];
-                    const dropdownKey = `${index}-${column.label}`;
 
                     if (column.label === '집행금액' && typeof value === 'number') {
                       return (
@@ -111,24 +115,13 @@ const ReviewTable = () => {
                     } else if (column.label === '증빙구분' || column.label === '세목명') {
                       return (
                         <RowItem key={colIndex} width={column.width}>
-                          <Tag
+                          <div onMouseDown={(e) => e.stopPropagation()}>
+                          <TagDropdown
                             label={column.label}
                             value={value}
-                            onClick={() => {
-                              setActiveDropdownIndex(dropdownKey);
-                            }}
-                          >
-                            {value ?? '-'}
-                          </Tag>
-                          {activeDropdownIndex === dropdownKey && (
-                            <div style={{ position: 'absolute', zIndex: 10 }}>
-                              <TagDropdown
-                                label={column.label}
-                                onSelect={(selected) => handleTagSelect(index, column.label, selected)}
-                                defaultValue={reviewTableData[index][column.label]} // 최신 상태 반영
-                              />
-                            </div>
-                          )}
+                            onSelect={(selected) => handleTagSelect(index, column.label, selected)}
+                          />
+                          </div>
                         </RowItem>
                       );
                     } else {
@@ -144,6 +137,15 @@ const ReviewTable = () => {
               </div>
             ))}
           </Table>
+        )}
+        {drawerOpen && selectedRowIndex !== null && (
+          <Drawer
+            open={drawerOpen}
+            width={750}
+            row={filteredData[selectedRowIndex]}
+            initialIndex={selectedRowIndex}
+            closeDrawer={() => setDrawerOpen(false)}
+          />
         )}
       </BaseContainer>
     </BaseContainer>
