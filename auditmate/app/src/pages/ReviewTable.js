@@ -46,11 +46,25 @@ const ReviewTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
+  const [sortValue, setSortValue] = useState('date-asc');
 
   const openDrawer = (index) => {
     setSelectedRowIndex(index);
     setDrawerOpen(true);
   };
+
+  const options = [
+    { label: '집행일자 오름차순', value: 'date-asc' },
+    { label: '집행일자 내림차순', value: 'date-desc' },
+    { label: '집행용도 오름차순', value: 'use-asc' },
+    { label: '집행용도 내림차순', value: 'use-desc' },
+    { label: '세목명 오름차순', value: 'category-asc' },
+    { label: '세목명 내림차순', value: 'category-desc' },
+    { label: '거래처명 오름차순', value: 'correspondant-asc' },
+    { label: '거래처명 내림차순', value: 'correspondant-desc' },
+    { label: '예금주명 오름차순', value: 'depositor-asc' },
+    { label: '예금주명 내림차순', value: 'depositor-desc' },
+  ];
 
   const columns = [
     { label: '집행실행일자', width: 90 },
@@ -66,6 +80,34 @@ const ReviewTable = () => {
     { label: '보완사항', width: 150 },
   ];
 
+  const getSortedData = (data, sortKey) => {
+    const sorted = [...data];
+    switch (sortKey) {
+      case 'date-asc':
+        return sorted.sort((a, b) => (a['집행실행일자'] || '').localeCompare(b['집행실행일자'] || ''));
+      case 'date-dsc':
+        return sorted.sort((a, b) => (b['집행실행일자'] || '').localeCompare(a['집행실행일자'] || ''));
+      case 'use-asc':
+        return sorted.sort((a, b) => (a['집행용도'] || '').localeCompare(b['집행용도'] || ''));
+      case 'use-dsc':
+        return sorted.sort((a, b) => (b['집행용도'] || '').localeCompare(a['집행용도'] || ''));
+      case 'category-asc':
+        return sorted.sort((a, b) => (a['세목명'] || '').localeCompare(b['세목명'] || ''));
+      case 'category-dsc':
+        return sorted.sort((a, b) => (b['세목명'] || '').localeCompare(a['세목명'] || ''));
+      case 'correspondant-asc':
+        return sorted.sort((a, b) => (a['거래처명'] || '').localeCompare(b['거래처명'] || ''));
+      case 'correspondant-desc':
+        return sorted.sort((a, b) => (b['거래처명'] || '').localeCompare(a['거래처명'] || ''));
+      case 'depositor-asc':
+        return sorted.sort((a, b) => (a['예금주명'] || '').localeCompare(b['예금주명'] || ''));
+      case 'depositor-desc':
+        return sorted.sort((a, b) => (b['예금주명'] || '').localeCompare(a['예금주명'] || ''));
+      default:
+        return sorted;
+    }
+  };
+
   const filteredData = searchTerm.trim()
     ? reviewTableData.filter((row) =>
         Object.values(row).some(
@@ -75,6 +117,8 @@ const ReviewTable = () => {
         )
       )
     : reviewTableData;
+  
+  const sortedData = getSortedData(filteredData, sortValue);
 
   const handleTagSelect = (index, label, selected) => {
     setReviewTableData(prevData =>
@@ -88,7 +132,7 @@ const ReviewTable = () => {
     <BaseContainer direction="row">
       <SideBar />
       <BaseContainer direction="column">
-        <TopBar Title="Review Table" onChange={(e) => setSearchTerm(e.target.value)} />
+        <TopBar Title="Review Table" options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
           <UploadModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
@@ -100,7 +144,8 @@ const ReviewTable = () => {
           </Table>
         ) : (
           <Table columns={columns}>
-            {filteredData.map((row, index) => (
+            {sortedData.length > 0 ? (
+              sortedData.map((row, index) => (
               <div key={index} style={{ width: '100%', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
                 <RowContainer onClick={() => openDrawer(index)}>
                   {columns.map((column, colIndex) => {
@@ -135,7 +180,10 @@ const ReviewTable = () => {
                 </RowContainer>
                 <Line />
               </div>
-            ))}
+            ))
+          ) : (
+            <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
+          )}
           </Table>
         )}
         {drawerOpen && selectedRowIndex !== null && (

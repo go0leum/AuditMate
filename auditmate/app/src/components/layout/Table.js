@@ -13,7 +13,7 @@ const Container = styled.div`
 const ColumnContainer = styled.div`
   width: ${({ $width }) => $width || 'calc(100% - 60px)'};
   align-items: center;
-  padding: ${({ padding }) => padding || '20px 20px'};
+  padding: ${({ $padding }) => $padding || '20px 20px'};
   display: inline-flex;
   justify-content: space-between;
   align-items: center;
@@ -21,7 +21,7 @@ const ColumnContainer = styled.div`
 
 
 const ColumnItem = styled.div`
-  width: ${({ width }) => width}px;
+  width: ${({ $width }) => $width}px;
   text-align: center;
   justify-content: center;
   display: flex;
@@ -43,9 +43,9 @@ const Line = styled.div`
 const Table = ({ columns, children, columnPadding, width }) => {
   return (
     <Container>
-      <ColumnContainer $width={width} padding={columnPadding}>
+      <ColumnContainer $width={width} $padding={columnPadding}>
         {columns.map(({ label, width }, index) => (
-          <ColumnItem key={index} width={width}>
+          <ColumnItem key={index} $width={width}>
             {label}
           </ColumnItem>
         ))}

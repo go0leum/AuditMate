@@ -22,12 +22,12 @@ const Title = styled.div`
   word-wrap: break-word;
 `;
 
-const TopBar = ({ Title: titleText, onChange }) => {
+const TopBar = ({ Title: titleText, value, onChange, sortValue, onSortChange, options }) => {
   return (
     <Container>
       <Title>{titleText}</Title>
-      <SearchBox placeholder="Search here..." style={{ width: 200.0, height: 42.12 }} onChange={onChange} />
-      <SortDropdown shortByText="Sort by :" newestText="Newest" style={{ margin: '0 auto' }} />
+      <SearchBox placeholder="Search here..." style={{ width: 200.0, height: 42.12 }} value={value} onChange={onChange} />
+      <SortDropdown options={options} initialValue={sortValue} onChange={onSortChange} style={{ margin: '0 auto' }} />
     </Container>
   );
 };

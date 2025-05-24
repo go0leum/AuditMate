@@ -68,18 +68,7 @@ const DropdownItem = styled.div`
   }
 `;
 
-const options = [
-  { label: '날짜 오름차순', value: 'date-asc' },
-  { label: '날짜 내림차순', value: 'date-dsc' },
-  { label: '한글 오름차순', value: 'hangul-asc' },
-  { label: '한글 내림차순', value: 'hangul-desc' },
-  { label: '파일 크기 오름차순', value: 'size-asc' },
-  { label: '파일 크기 내림차순', value: 'size-desc' },
-  { label: '진행도 오름차순', value: 'progress-asc' },
-  { label: '진행도 내림차순', value: 'progress-desc' },
-];
-
-const SortDropdown = ({ onChange, initialValue = 'date-asc' }) => {
+const SortDropdown = ({ options, onChange, initialValue = 'date-asc' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(initialValue);
   const dropdownRef = useRef(null);
