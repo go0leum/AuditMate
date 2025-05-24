@@ -11,13 +11,14 @@ const Container = styled.div`
 `;
 
 const ColumnContainer = styled.div`
-  width: calc(100% - 60px);
+  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
   align-items: center;
-  padding : 20px 20px;
+  padding: ${({ padding }) => padding || '20px 20px'};
   display: inline-flex;
   justify-content: space-between;
   align-items: center;
 `;
+
 
 const ColumnItem = styled.div`
   width: ${({ width }) => width}px;
@@ -39,12 +40,12 @@ const Line = styled.div`
   outline-offset: -0.5px;
 `;
 
-const Table = ({ columns, children }) => {
+const Table = ({ columns, children, columnPadding, width }) => {
   return (
-    <Container >
-      <ColumnContainer>
+    <Container>
+      <ColumnContainer $width={width} padding={columnPadding}>
         {columns.map(({ label, width }, index) => (
-          <ColumnItem key={index} width={width} >
+          <ColumnItem key={index} width={width}>
             {label}
           </ColumnItem>
         ))}
@@ -52,7 +53,7 @@ const Table = ({ columns, children }) => {
       <Line />
       {children}
     </Container>
-    );
+  );
 };
 
 export default Table;
