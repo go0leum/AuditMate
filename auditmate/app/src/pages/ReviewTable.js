@@ -13,7 +13,7 @@ import Drawer from '../components/layout/Drawer';
 import Button from '../components/common/Button';
 
 const RowContainer = styled.div`
-  width: calc(100% - 60px);
+  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
   align-items: center;
   padding: 20px 20px;
   display: inline-flex;
@@ -21,9 +21,9 @@ const RowContainer = styled.div`
 `;
 
 const RowItem = styled.div`
-  position: relative;
   width: ${({ width }) => width}px;
   text-align: center;
+  justify-content: center;
   display: flex;
   flex-direction: column;
   color: #292D32;
@@ -31,17 +31,18 @@ const RowItem = styled.div`
   font-family: 'NanumGothic', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
+
 `;
 
 const Line = styled.div`
-  width: 100%;
+  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
   height: 0px;
   outline: 1px solid #EEEEEE;
   outline-offset: -0.5px;
 `;
 
 const ReviewTable = () => {
-  const { reviewTableData, setReviewTableData } = useContext(TableContext);
+  const { reviewTableData, setReviewTableData, handleTagSelect } = useContext(TableContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -120,14 +121,6 @@ const ReviewTable = () => {
   
   const sortedData = getSortedData(filteredData, sortValue);
 
-  const handleTagSelect = (index, label, selected) => {
-    setReviewTableData(prevData =>
-      prevData.map((row, rowIndex) =>
-        rowIndex === index ? { ...row, [label]: selected } : row
-      )
-    );
-  };
-
   return (
     <BaseContainer direction="row">
       <SideBar />
@@ -139,28 +132,28 @@ const ReviewTable = () => {
           <Button onClick={() => console.log('Export')} secondary>Export</Button>
         </div>
         {reviewTableData.length === 0 ? (
-          <Table columns={columns}>
+          <Table columns={columns} width="calc(100% - 60px)">
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
           </Table>
         ) : (
-          <Table columns={columns}>
+          <Table columns={columns} width="calc(100% - 60px)">
             {sortedData.length > 0 ? (
               sortedData.map((row, index) => (
               <div key={index} style={{ width: '100%', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
-                <RowContainer onClick={() => openDrawer(index)}>
+                <RowContainer onClick={() => openDrawer(index)} width="calc(100% - 60px)">
                   {columns.map((column, colIndex) => {
                     const value = row[column.label];
 
                     if (column.label === '집행금액' && typeof value === 'number') {
                       return (
-                        <RowItem key={colIndex} width={column.width}>
+                        <RowItem key={colIndex} width={column.width} >
                           {value.toLocaleString()}
                         </RowItem>
                       );
                     } else if (column.label === '증빙구분' || column.label === '세목명') {
                       return (
                         <RowItem key={colIndex} width={column.width}>
-                          <div onMouseDown={(e) => e.stopPropagation()}>
+                          <div onMouseDown={(e) => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                           <TagDropdown
                             label={column.label}
                             value={value}
@@ -189,10 +182,10 @@ const ReviewTable = () => {
         {drawerOpen && selectedRowIndex !== null && (
           <Drawer
             open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
             width={750}
             row={filteredData[selectedRowIndex]}
             initialIndex={selectedRowIndex}
-            closeDrawer={() => setDrawerOpen(false)}
           />
         )}
       </BaseContainer>

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
 import styled from 'styled-components';
 
 import DocumentList from "./DocumentList";
@@ -12,8 +12,16 @@ import { DrawerContext } from "../../context/DrawerContext";
 import { TableContext } from "../../context/TableContext";
 import UsageBar from "../common/UsageBar";
 
+const Overlay = styled.div`
+  display: ${({ open }) => (open ? 'block' : 'none')};
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.2);
+  z-index: 98; // SidebarWrapper보다 낮게
+`;
+
 const RowContainer = styled.div`
-  width: 100%;
+  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
   align-items: center;
   padding: 20px 20px;
   display: inline-flex;
@@ -21,9 +29,9 @@ const RowContainer = styled.div`
 `;
 
 const RowItem = styled.div`
-  position: relative;
-  width: ${({ $width }) => $width}px;
+  width: ${({ width }) => width}px;
   text-align: center;
+  justify-content: center;
   display: flex;
   flex-direction: column;
   color: #292D32;
@@ -79,7 +87,7 @@ const FooterSection = styled(Section)`
   gap: 20px;
 `;
 
-const Drawer = ({ open = false, width = 750, row }) => {
+const Drawer = ({ open = false, width = 750, row, onClose }) => {
   const { sideRef, memo, setMemo, note, setNote } = useContext(DrawerContext);
   const {selectedXlsxFile} = useContext(TableContext);
   const { reviewTableData, handleTagSelect } = useContext(TableContext);
@@ -98,6 +106,8 @@ const Drawer = ({ open = false, width = 750, row }) => {
     setSelectedIndex(prev => (prev < reviewTableData.length - 1 ? prev + 1 : prev));
   };
 
+  const drawerRef = useRef();
+
   const columns = [
     { label: '집행실행일자', width: 90 },
     { label: '증빙구분', width: 105 },
@@ -109,69 +119,83 @@ const Drawer = ({ open = false, width = 750, row }) => {
     { label: '집행금액', width: 80 },
   ];
 
-  return (
-    <Container style={{ pointerEvents: open ? "auto" : "none" }}>
-      <SidebarWrapper ref={sideRef} $isOpen={open} $width={width}>
-        <Content>
-          <Table columns={columns} $width="100%">
-            <RowContainer $width="100%">
-              {currentRow && columns.map((column, index) => {
-                const value = currentRow[column.label];
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e) {
+      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
+        onClose?.();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open, onClose]);
 
-                if (column.label === '집행금액' && typeof value === 'number') {
-                  return (
-                    <RowItem key={index} $width={column.width}>
-                      {value.toLocaleString()}
-                    </RowItem>
-                  );
-                } else if (column.label === '증빙구분' || column.label === '세목명') {
-                  return (
-                    <RowItem key={index} width={column.width}>
-                      <TagDropdown
-                        label={column.label}
-                        value={value}
-                        onSelect={(selected) =>
-                          handleTagSelect?.(selectedIndex, column.label, selected)
-                        }
-                      />
-                    </RowItem>
-                  );
-                } else {
-                  return (
-                    <RowItem key={index} width={column.width}>
-                      {value ?? '-'}
-                    </RowItem>
-                  );
-                }
-              })}
-            </RowContainer>
-          </Table>
-          <DocumentList category={row['세목명']} proof={row['증빙구분']} />
-          <ReviewContent />
-          <Section>
-            <MemoInput
-              label="메모"
-              placeholder="메모를 입력해주세요"
-              value={memo}
-              onChange={e => setMemo(e.target.value)}
-            />
-            <MemoInput
-              label="보완사항"
-              placeholder="보완사항을 입력해주세요"
-              value={note}
-              onChange={e => setNote(e.target.value)}
-            />
-          </Section>
-          <FooterSection>
-            <div style={{ width: '500px', padding: '0 20px' }}>
-              <UsageBar progress={selectedXlsxFile?.progress} width={500}/>
-            </div>
-            <Button onClick={handlePrev}>Before</Button>
-            <Button onClick={handleNext} secondary>Next</Button>
-          </FooterSection>
-        </Content>
-      </SidebarWrapper>
-    </Container>
+  return (
+    <>
+      <Overlay open={open} onClick={onClose} />
+      <Container style={{ pointerEvents: open ? "auto" : "none" }}>
+        <SidebarWrapper ref={sideRef} $isOpen={open} $width={width}>
+          <Content>
+            <Table columns={columns} width="100%">
+              <RowContainer $width="100%">
+                {currentRow && columns.map((column, index) => {
+                  const value = currentRow[column.label];
+
+                  if (column.label === '집행금액' && typeof value === 'number') {
+                    return (
+                      <RowItem key={index} width={column.width}>
+                        {value.toLocaleString()}
+                      </RowItem>
+                    );
+                  } else if (column.label === '증빙구분' || column.label === '세목명') {
+                    return (
+                      <RowItem key={index} width={column.width}>
+                        <TagDropdown
+                          label={column.label}
+                          value={value}
+                          onSelect={(selected) =>
+                            handleTagSelect?.(selectedIndex, column.label, selected)
+                          }
+                        />
+                      </RowItem>
+                    );
+                  } else {
+                    return (
+                      <RowItem key={index} width={column.width}>
+                        {value ?? '-'}
+                      </RowItem>
+                    );
+                  }
+                })}
+              </RowContainer>
+            </Table>
+            <DocumentList category={row['세목명']} proof={row['증빙구분']} />
+            <ReviewContent />
+            <Section>
+              <MemoInput
+                label="메모"
+                placeholder="메모를 입력해주세요"
+                value={memo}
+                onChange={e => setMemo(e.target.value)}
+              />
+              <MemoInput
+                label="보완사항"
+                placeholder="보완사항을 입력해주세요"
+                value={note}
+                onChange={e => setNote(e.target.value)}
+              />
+            </Section>
+            <FooterSection>
+              <div style={{ width: '500px', padding: '0 20px' }}>
+                <UsageBar progress={selectedXlsxFile?.progress} width={500}/>
+              </div>
+              <Button onClick={handlePrev}>Before</Button>
+              <Button onClick={handleNext} secondary>Next</Button>
+            </FooterSection>
+          </Content>
+        </SidebarWrapper>
+      </Container>
+    </>
   );
 };
 

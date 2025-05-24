@@ -16,7 +16,6 @@ const ColumnContainer = styled.div`
   padding: ${({ $padding }) => $padding || '20px 20px'};
   display: inline-flex;
   justify-content: space-between;
-  align-items: center;
 `;
 
 
@@ -34,7 +33,7 @@ const ColumnItem = styled.div`
 `;
 
 const Line = styled.div`
-  width: calc(100% - 60px);
+  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
   height: 0px;
   outline: 1px solid #EEEEEE;
   outline-offset: -0.5px;
@@ -50,7 +49,7 @@ const Table = ({ columns, children, columnPadding, width }) => {
           </ColumnItem>
         ))}
       </ColumnContainer>
-      <Line />
+      <Line $width={width}/>
       {children}
     </Container>
   );
