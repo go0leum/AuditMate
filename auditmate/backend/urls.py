@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from .views import list_files, download_file, upload_files, read_xlsx
+from .views import list_files, download_file, upload_files, read_xlsx, save_xlsx
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,5 +24,6 @@ urlpatterns = [
     path("api/download/<str:folder_name>/<str:file_name>/", download_file, name="download_file"),
     path('api/upload/', upload_files, name='upload_files'), 
     path('api/read-xlsx/', read_xlsx, name='read_xlsx'),
+    path('api/save-xlsx/', save_xlsx, name='save_xlsx'),
 
 ]

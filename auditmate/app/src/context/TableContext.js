@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import debounce from 'lodash.debounce';
 import { useLocation } from 'react-router-dom';
 
 export const TableContext = createContext();
@@ -36,17 +37,50 @@ const TableProvider = ({ children }) => {
       console.error("Error fetching data:", error);
       setReviewTableData([]);
     }
-  }, [selectedXlsxFile]); // 💡 의존성: selectedXlsxFile만 포함
+  }, [selectedXlsxFile]); 
+
+  const saveReviewTableData = useCallback(async (data) => {
+    try {
+      await axios.post('http://localhost:8000/api/save-xlsx/', {
+        folderName: selectedXlsxFile?.folderName,
+        xlsxFile: selectedXlsxFile?.xlsxFile,
+        lastModified: selectedXlsxFile?.lastModified,
+        data,
+      });
+    } catch (error) {
+      console.error("Error saving data:", error);
+    }
+  }, [selectedXlsxFile]);
+
+  const debouncedSave = useCallback(
+    debounce((data) => {
+      saveReviewTableData(data);
+    }, 1000), // 1000ms = 1초
+    [saveReviewTableData]
+  );
+
+  const handleTagSelect = useCallback((index, label, selected) => {
+    setReviewTableData(prevData =>
+      prevData.map((row, rowIndex) =>
+        rowIndex === index ? { ...row, [label]: selected } : row
+      )
+    );
+  }, [setReviewTableData]);
 
   useEffect(() => {
     if (location.pathname.includes('/reviewTable/')) {
       fetchExcelData();
     }
-  }, [fetchExcelData, location.pathname]); // 이제 경고 없이 안전
+    if (reviewTableData.length > 0) {
+      debouncedSave(reviewTableData);
+    }
+    return () => debouncedSave.cancel();
+  }, [fetchExcelData, location.pathname, reviewTableData, debouncedSave]); 
 
   return (
     <TableContext.Provider 
       value={{
+        handleTagSelect,
         selectedXlsxFile, 
         reviewTableData,
         setSelectedXlsxFile,

@@ -224,3 +224,41 @@ def read_xlsx(request):
         'expected_columns': expected_columns,
         'actual_columns': [],
     }, status=405, safe=False, json_dumps_params={'ensure_ascii': False})
+
+@csrf_exempt
+def save_xlsx(request):
+    if request.method == "POST":
+        try:
+            body = json.loads(request.body)
+            folder_name = body.get("folderName")
+            xlsx_file = body.get("xlsxFile")
+            last_modified = body.get("lastModified")
+            data = body.get("data")
+
+            if not folder_name or not xlsx_file or not data:
+                return JsonResponse({"status": "error", "message": "필수 정보가 누락되었습니다."}, status=400)
+
+            file_path = os.path.join(UPLOAD_DIR, folder_name, xlsx_file)
+
+            # DataFrame으로 변환 후 저장
+            df = pd.DataFrame(data)
+            df.to_excel(file_path, index=False)
+
+            # metadata.json 업데이트
+            metadata_path = os.path.join(UPLOAD_DIR, folder_name, "metadata.json")
+            if os.path.exists(metadata_path):
+                with open(metadata_path, "r", encoding="utf-8") as f:
+                    metadata = json.load(f)
+            else:
+                metadata = {}
+
+            metadata["lastModified"] = last_modified or datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            metadata["progress"] = calculate_progress(df)
+
+            with open(metadata_path, "w", encoding="utf-8") as f:
+                json.dump(metadata, f, ensure_ascii=False, indent=4)
+
+            return JsonResponse({"status": "success", "message": "저장 완료"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
