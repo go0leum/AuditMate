@@ -73,11 +73,11 @@ const Button = styled.div`
   justify-content: flex-start;
   align-items: center;
   gap: 10px;
-  background: ${({ active }) => (active ? '#0647A9' : 'white')};
+  background: ${({ $active }) => ($active ? '#0647A9' : 'white')};
 `;
 
 const ButtonText = styled.div`
-  color: ${({ active }) => (active ? 'white' : 'black')};
+  color: ${({ $active }) => ($active ? 'white' : 'black')};
   font-size: 14px;
   padding: 17px 15px;
   font-family: 'NanumGothic', sans-serif;
@@ -118,8 +118,8 @@ const DocumentList = ({ category, proof }) => {
                 {rowIndex === 0 && <Label>{phase}</Label>}
                 {rowIndex > 0 && <Label>{''}</Label>}
                 {docGroup.map(doc => (
-                  <Button key={doc} active={selectedDocument === doc} onClick={() => handleClick(doc)}>
-                    <ButtonText active={selectedDocument === doc}>{doc}</ButtonText>
+                  <Button key={doc} $active={selectedDocument === doc} onClick={() => handleClick(doc)}>
+                    <ButtonText $active={selectedDocument === doc}>{doc}</ButtonText>
                   </Button>
                 ))}
               </Row>
@@ -134,8 +134,8 @@ const DocumentList = ({ category, proof }) => {
               <Row key={`${proofType}-${rowIndex}`}>
                 {rowIndex === 0 && <Label>{proofType}</Label>}
                 {docGroup.map(doc => (
-                  <Button key={doc} active={selectedDocument === doc} onClick={() => handleClick(doc)}>
-                    <ButtonText active={selectedDocument === doc}>{doc}</ButtonText>
+                  <Button key={doc} $active={selectedDocument === doc} onClick={() => handleClick(doc)}>
+                    <ButtonText $active={selectedDocument === doc}>{doc}</ButtonText>
                   </Button>
                 ))}
               </Row>

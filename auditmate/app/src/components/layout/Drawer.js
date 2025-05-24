@@ -18,12 +18,11 @@ const RowContainer = styled.div`
   padding: 20px 20px;
   display: inline-flex;
   justify-content: space-between;
-  align-items: center;
 `;
 
 const RowItem = styled.div`
-  flex: 0 0 ${({ width }) => width}px;
-  max-width: ${({ width }) => width}px;
+  position: relative;
+  width: ${({ $width }) => $width}px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -32,7 +31,6 @@ const RowItem = styled.div`
   font-family: 'NanumGothic', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
-  box-sizing: border-box;
 `;
 
 const Container = styled.div`
@@ -50,7 +48,7 @@ const SidebarWrapper = styled.div`
   height: 100%;
   z-index: 99;
   width: ${({ width }) => width}px;
-  transform: ${({ isOpen, width }) => (isOpen ? 'translateX(0)' : `translateX(${width}px)`)};
+  transform: ${({ $isOpen, $width }) => ($isOpen ? 'translateX(0)' : `translateX(${$width}px)`)};
   transition: transform 0.3s ease-in-out;
 `;
 
@@ -113,16 +111,16 @@ const Drawer = ({ open = false, width = 750, row }) => {
 
   return (
     <Container style={{ pointerEvents: open ? "auto" : "none" }}>
-      <SidebarWrapper ref={sideRef} isOpen={open} width={width}>
+      <SidebarWrapper ref={sideRef} $isOpen={open} $width={width}>
         <Content>
-          <Table columns={columns} width='100%' columnPadding="20px 0px" >
-            <RowContainer>
+          <Table columns={columns} $width="100%">
+            <RowContainer $width="100%">
               {currentRow && columns.map((column, index) => {
                 const value = currentRow[column.label];
 
                 if (column.label === '집행금액' && typeof value === 'number') {
                   return (
-                    <RowItem key={index} width={column.width}>
+                    <RowItem key={index} $width={column.width}>
                       {value.toLocaleString()}
                     </RowItem>
                   );
@@ -165,7 +163,7 @@ const Drawer = ({ open = false, width = 750, row }) => {
             />
           </Section>
           <FooterSection>
-            <div style={{ width: '500px' }}>
+            <div style={{ width: '500px', padding: '0 20px' }}>
               <UsageBar progress={selectedXlsxFile?.progress} width={500}/>
             </div>
             <Button onClick={handlePrev}>Before</Button>
