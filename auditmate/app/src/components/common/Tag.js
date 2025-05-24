@@ -1,4 +1,7 @@
+import React from 'react';
 import styled from 'styled-components';
+
+import category_rule from '../../data/category_rule.json';
 
 const TagWrapper = styled.div`
   padding: 2px 8px;
@@ -21,33 +24,27 @@ const TagText = styled.div`
   color: ${({ color }) => TAG_STYLES[color]?.text.color};
 `;
 
-const getTagColor = (label, value) => {
-  if (label === '증빙구분') {
-    if (value === '전자세금계산서') return 'blue';
-    if (value === '보조금전용카드') return 'green';
-    if (value === '기타') return 'grey';
-  }
-  if (label === '세목명') {
-    if (value === '인건비') return 'purple';
-    if (value === '일반수용비') return 'red';
-    if (value === '일반용역비') return 'blue';
-    if (value === '여비') return 'green';
-    if (value === '업무추진비') return 'yellow';
-    else return 'grey';
-  }
-};
+const COLOR_ORDER = ['blue', 'green', 'yellow', 'red', 'purple'];
+
 
 const TAG_STYLES = {
   blue: { wrapper: { background: '#CDDAEE', outline: '#ACC2E2' }, text: { color: '#0647A9' } },
   green: { wrapper: { background: '#D3DFCE', outline: '#B6CAAE' }, text: { color: '#255F0B' } },
   yellow: { wrapper: { background: '#F3EAD1', outline: '#EBDCB3' }, text: { color: '#C4951B' } },
   red: { wrapper: { background: '#EED3D3', outline: '#E2B6B6' }, text: { color: '#A92525' } },
-  grey: { wrapper: { background: '#F5F5F5', outline: '#C2C2C2' }, text: { color: '#5F5F5F' } },
   purple: { wrapper: { background: '#F7F5FF', outline: '#B6ABED' }, text: { color: '#4C34C2' } },
+  grey: { wrapper: { background: '#F5F5F5', outline: '#C2C2C2' }, text: { color: '#5F5F5F' } },
+};
+
+const getTagColor = (label, value, category_rule) => {
+  if (!category_rule || !category_rule[label]) return 'grey';
+  const idx = category_rule[label].indexOf(value);
+  if (idx === -1) return 'grey';
+  return COLOR_ORDER[idx % COLOR_ORDER.length] || 'grey';
 };
 
 const Tag = ({ children, label, value, onClick, ...props }) => {
-  const color = getTagColor(label, value) || 'grey'; // fallback도 넣으면 좋아요
+  const color = getTagColor(label, value, category_rule) || 'grey'; // fallback도 넣으면 좋아요
   return (
     <TagWrapper color={color} onClick={onClick} {...props}>
       <TagText color={color}>{children}</TagText>
