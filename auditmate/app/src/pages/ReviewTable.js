@@ -11,6 +11,7 @@ import TagDropdown from '../components/common/TagDropdown';
 import Drawer from '../components/layout/Drawer';
 
 import Button from '../components/common/Button';
+import RowExpand from '../components/common/RowExpand';
 
 const RowContainer = styled.div`
   width: ${({ $width }) => $width || 'calc(100% - 60px)'};
@@ -18,6 +19,7 @@ const RowContainer = styled.div`
   padding: 20px 20px;
   display: inline-flex;
   justify-content: space-between;
+  position: relative;
 `;
 
 const RowItem = styled.div`
@@ -31,6 +33,7 @@ const RowItem = styled.div`
   font-family: 'NanumGothic', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
+  position: relative;
 
 `;
 
@@ -42,13 +45,14 @@ const Line = styled.div`
 `;
 
 const ReviewTable = () => {
-  const { reviewTableData, handleTagSelect } = useContext(TableContext);
+  const { tableData, handleTagSelect } = useContext(TableContext);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
   const [sortValue, setSortValue] = useState('original');
+  const [expandedRows, setExpandedRows] = useState({});
 
   const openDrawer = (index) => {
     setSelectedRowIndex(index);
@@ -114,7 +118,7 @@ const ReviewTable = () => {
   };
 
   const filteredData = searchTerm.trim()
-    ? reviewTableData
+    ? tableData
         .filter((row) =>
           Object.values(row).some(
             (value) =>
@@ -122,7 +126,7 @@ const ReviewTable = () => {
               value.toLowerCase().includes(searchTerm.toLowerCase())
           )
         )
-    : reviewTableData;
+    : tableData;
 
   const sortedData = getSortedData(filteredData, sortValue);
 
@@ -136,7 +140,7 @@ const ReviewTable = () => {
           <UploadModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
           <Button onClick={() => console.log('Export')} secondary>Export</Button>
         </div>
-        {reviewTableData.length === 0 ? (
+        {tableData.length === 0 ? (
           <Table columns={columns} width="calc(100% - 60px)">
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
           </Table>
@@ -167,6 +171,30 @@ const ReviewTable = () => {
                             </div>
                           </RowItem>
                         );
+                      } else if (column.label === '검토내용') {
+                        return (
+                          <RowItem
+                            key={colIndex}
+                            width={column.width}
+                            style={{ cursor: typeof value === 'object' && value !== null ? 'pointer' : 'default' }}
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (typeof value === 'object' && value !== null) {
+                                setExpandedRows(prev => ({
+                                  ...prev,
+                                  [index]: !prev[index]
+                                }));
+                              }
+                            }}
+                          >
+                            {typeof value === 'object' && value !== null
+                              ? Object.keys(value).join(', ')
+                              : value ?? '-'}
+                            {expandedRows[index] && typeof value === 'object' && value !== null && (
+                              <RowExpand value={value} />
+                            )}
+                          </RowItem>
+                        );
                       } else {
                         return (
                           <RowItem key={colIndex} width={column.width}>
@@ -184,15 +212,15 @@ const ReviewTable = () => {
             )}
           </Table>
         )}
-          {sortedData.length > 0 && (
-            <Drawer
-              open={drawerOpen}
-              onClose={() => setDrawerOpen(false)}
-              width={750}
-              data={sortedData}
-              initialIndex={selectedRowIndex}
-            />
-          )}
+        {sortedData.length > 0 && (
+          <Drawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            width={750}
+            data={sortedData}
+            initialIndex={selectedRowIndex}
+          />
+        )}
       </BaseContainer>
     </BaseContainer>
   );
