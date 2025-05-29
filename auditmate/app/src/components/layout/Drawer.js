@@ -22,7 +22,7 @@ const Overlay = styled.div`
 const RowContainer = styled.div`
   width: ${({ $width }) => $width || 'calc(100% - 60px)'};
   align-items: stretch;
-  padding: 20px 20px;
+  padding: 20px;
   display: flex;
   justify-content: space-between;
 `;
@@ -55,7 +55,6 @@ const SidebarWrapper = styled.div`
   height: 100%;
   z-index: 99;
   width: ${({ width }) => width}px;
-  /* 슬라이드 애니메이션: 오른쪽에서 왼쪽으로 */
   transform: ${({ $isOpen }) =>
     $isOpen ? 'translateX(0)' : 'translateX(100%)'};
   transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
@@ -69,10 +68,9 @@ const Content = styled.div`
   width: 100%;
   flex-direction: column;
   gap: 20px;
-
   height: 100%;
   overflow-y: auto;
-  box-sizing: border-box; // ★ 추가
+  box-sizing: border-box;
 `;
 
 const Section = styled.div`
@@ -94,20 +92,37 @@ const HeaderSection = styled.div`
 
 const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
   const { sideRef, memo, setMemo, note, setNote } = useContext(DrawerContext);
-  const { selectedXlsxFile } = useContext(TableContext);
-  const { handleTagSelect } = useContext(TableContext);
+  const { selectedXlsxFile, handleTagSelect, setTableData } = useContext(TableContext);
 
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+  const [reviewContent, setReviewContent] = useState(data[initialIndex]?.['검토내용'] || {});
+  const [selectedDocument, setSelectedDocument] = useState(
+    data[initialIndex]?.['검토내용'] ? Object.keys(data[initialIndex]['검토내용'])[0] : ''
+  );
   const currentRow = data[selectedIndex];
 
   useEffect(() => {
     if (open) setSelectedIndex(initialIndex);
-    // open이 true가 될 때만 초기화
-    // 또는 open && selectedIndex !== initialIndex 체크도 가능
   }, [open, initialIndex]);
+
+  useEffect(() => {
+    setReviewContent(currentRow?.['검토내용'] || {});
+    setSelectedDocument(currentRow?.['검토내용'] ? Object.keys(currentRow['검토내용'])[0] : '');
+  }, [currentRow]);
 
   const handlePrev = () => setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
   const handleNext = () => setSelectedIndex(prev => (prev < data.length - 1 ? prev + 1 : prev));
+
+  const handleReviewContentSave = (newContent) => {
+    setReviewContent(newContent);
+    setTableData(prev =>
+      prev.map((row, idx) =>
+        idx === selectedIndex
+          ? { ...row, 검토내용: newContent } // 대괄호 제거
+          : row
+      )
+    );
+  };
 
   const drawerRef = useRef();
 
@@ -180,8 +195,17 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
             </Table>
             {currentRow && (
               <>
-                <DocumentList category={currentRow['세목명']} proof={currentRow['증빙구분']} />
-                <ReviewContent />
+                <DocumentList
+                  category={currentRow['세목명']}
+                  proof={currentRow['증빙구분']}
+                  selectedDocument={selectedDocument}
+                  setSelectedDocument={setSelectedDocument}
+                />
+                <ReviewContent
+                  value={reviewContent}
+                  onChange={handleReviewContentSave}
+                  selectedDocument={selectedDocument}
+                />
                 <Section>
                   <MemoInput
                     label="메모"

@@ -88,9 +88,7 @@ const ButtonText = styled.div`
   justify-content: center;
 `;
 
-const DocumentList = ({ category, proof }) => {
-  const { selectedDocument, setSelectedDocument } = useContext(DrawerContext);
-
+const DocumentList = ({ category, proof, selectedDocument, setSelectedDocument }) => {
   const documentSections = data.세목별서류[category] || {};
   const proofSections = data.증빙구분별서류[proof] || {};
 

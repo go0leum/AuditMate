@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import styled from 'styled-components';
 import rules from '../../data/document_rule.json';
-import { useContext } from 'react';
-import { DrawerContext } from '../../context/DrawerContext';
 import InputField from '../common/InputField';
+
+import { DrawerContext } from '../../context/DrawerContext';
 
 const Wrapper = styled.div`
   align-self: stretch;
@@ -28,9 +28,9 @@ const SummaryBox = styled.div`
   color: #333;
   font-family: 'NanumGothic';
   font-size: 14px;
-  box-sizing: border-box; // ★ 추가
-  overflow-x: auto;        // ★ 긴 텍스트 대응
-  white-space: nowrap;     // ★ 텍스트 줄바꿈 방지
+  box-sizing: border-box;
+  overflow-x: auto;
+  white-space: nowrap;
 `;
 
 const Title = styled.div`
@@ -48,35 +48,46 @@ const chunkArray = (arr, size) =>
     arr.slice(i * size, i * size + size)
   );
 
-const ReviewContent = () => {
-  const { selectedDocument, inputValues, setInputValues } = useContext(DrawerContext);
-  const fields = rules["서류별기입항목"][selectedDocument] || [];
+const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
+  const [localContent, setLocalContent] = useState(value);
 
-  const handleChange = (label, value) => {
-    setInputValues(prev => ({ ...prev, [label]: value }));
+  useEffect(() => {
+    setLocalContent(value);
+  }, [value]);
+
+  const handleFieldChange = (doc, label, fieldValue) => {
+    const updated = {
+      ...localContent,
+      [doc]: {
+        ...localContent[doc],
+        [label]: fieldValue,
+      },
+    };
+    setLocalContent(updated);
+    onChange && onChange(updated);
   };
 
+  const fields = rules["서류별기입항목"][selectedDocument] || [];
+
   const summaryText = selectedDocument && fields.length > 0
-    ? `${selectedDocument} - ${fields.map(f => `${f}: ${inputValues[f] || ''}`).join(', ')}`
+    ? `${selectedDocument} - ${fields.map(f => `${f}: ${localContent[selectedDocument]?.[f] || ''}`).join(', ')}`
     : '';
 
   return (
     <Wrapper>
       <Title>검토 내용</Title>
-
       {chunkArray(fields, 3).map((group, idx) => (
         <Row key={idx}>
           {group.map(label => (
             <InputField
               key={label}
               label={label}
-              value={inputValues[label] || ''}
-              onChange={e => handleChange(label, e.target.value)}
+              value={localContent[selectedDocument]?.[label] || ''}
+              onChange={e => handleFieldChange(selectedDocument, label, e.target.value)}
             />
           ))}
         </Row>
       ))}
-
       <SummaryBox>{summaryText}</SummaryBox>
     </Wrapper>
   );

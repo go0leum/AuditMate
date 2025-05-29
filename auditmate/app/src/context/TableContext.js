@@ -8,7 +8,7 @@ export const TableContext = createContext();
 const TableProvider = ({ children }) => {
   const location = useLocation();
   const [selectedXlsxFile, setSelectedXlsxFile] = useState(null);
-  const [reviewTableData, setReviewTableData] = useState([]);
+  const [tableData, setTableData] = useState([]);
 
   const fetchExcelData = useCallback(async () => {
     if (!selectedXlsxFile) return;
@@ -22,24 +22,24 @@ const TableProvider = ({ children }) => {
       const { status, data, message, expected_columns, actual_columns } = response.data;
 
       if (status === 'success') {
-        setReviewTableData(data);
+        setTableData(data);
       } else if (status === 'warning') {
         alert(
           `⚠️ 컬럼명이 다릅니다.\n\n[예상 컬럼]\n${expected_columns.join(', ')}\n\n[실제 컬럼]\n${actual_columns.join(', ')}\n\n${message}`
         );
-        setReviewTableData([]);
+        setTableData([]);
       } else {
         console.error("Server returned unexpected structure:", response.data);
-        setReviewTableData([]);
+        setTableData([]);
       }
 
     } catch (error) {
       console.error("Error fetching data:", error);
-      setReviewTableData([]);
+      setTableData([]);
     }
   }, [selectedXlsxFile]); 
 
-  const saveReviewTableData = useCallback(async (data) => {
+  const saveTableData = useCallback(async (data) => {
     try {
       await axios.post('http://localhost:8000/api/save-xlsx/', {
         folderName: selectedXlsxFile?.folderName,
@@ -57,18 +57,18 @@ const TableProvider = ({ children }) => {
 
   const debouncedSave = useMemo(
     () => debounce((data) => {
-      saveReviewTableData(data);
+      saveTableData(data);
     }, 1000), //변경후 1초후 저장
-    [saveReviewTableData]
+    [saveTableData]
   );
 
   const handleTagSelect = useCallback((index, label, selected) => {
-    setReviewTableData(prevData =>
+    setTableData(prevData =>
       prevData.map((row, rowIndex) =>
         rowIndex === index ? { ...row, [label]: selected } : row
       )
     );
-  }, [setReviewTableData]);
+  }, [setTableData]);
 
   // 앱 시작 시 localStorage에서 복원
   useEffect(() => {
@@ -94,20 +94,20 @@ const TableProvider = ({ children }) => {
 
   // 자동 저장
   useEffect(() => {
-    if (selectedXlsxFile && reviewTableData.length > 0) {
-      debouncedSave(reviewTableData);
+    if (selectedXlsxFile && tableData.length > 0) {
+      debouncedSave(tableData);
     }
     return () => debouncedSave.cancel();
-  }, [selectedXlsxFile, debouncedSave]);
+  }, [selectedXlsxFile, tableData, debouncedSave]);
 
   return (
     <TableContext.Provider 
       value={{
         handleTagSelect,
         selectedXlsxFile, 
-        reviewTableData,
+        tableData,
         setSelectedXlsxFile,
-        setReviewTableData,
+        setTableData,
       }}
     >
       {children}
