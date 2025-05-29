@@ -18,7 +18,9 @@ const Label = styled.label`
 `;
 
 const StyledInput = styled.input`
-  padding: 6px 12px;
+  width: 180px;
+  height: 30px;
+  padding: 5px 10px;
   background: white;
   border-radius: 4px;
   border: 1px solid #E0E0E0;

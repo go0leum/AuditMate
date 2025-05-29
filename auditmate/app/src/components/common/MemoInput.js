@@ -8,6 +8,7 @@ const TextareaContainer = styled.div`
   justify-content: flex-start;
   align-items: flex-start;
   gap: 15px;
+  padding-bottom : 20px;
 `;
 
 const Label = styled.div`
@@ -18,8 +19,6 @@ const Label = styled.div`
 `;
 
 const TextareaWrapper = styled.div`
-  width: 300px;
-  height: 60px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -28,8 +27,8 @@ const TextareaWrapper = styled.div`
 `;
 
 const StyledTextarea = styled.textarea`
-  width: 100%;
-  height: 100%;
+  width: 300px;
+  height: 100px;
   resize: none;
   padding: 8px;
   border: 1px solid #B1B1B1;

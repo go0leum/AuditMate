@@ -20,7 +20,7 @@ const Row = styled.div`
 
 const SummaryBox = styled.div`
   width: 100%;
-  height: 60px;
+  height: 100px;
   border: 1px solid #B1B1B1;
   padding: 10px;
   border-radius: 4px;
