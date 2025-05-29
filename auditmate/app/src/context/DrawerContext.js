@@ -5,6 +5,7 @@ export const DrawerContext = createContext();
 const DrawerProvider = ({ children }) => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [inputValues, setInputValues] = useState({});
+
   const sideRef = useRef(null);
 
   const [memo, setMemo] = useState('');

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import debounce from 'lodash.debounce';
 import { useLocation } from 'react-router-dom';
@@ -47,15 +47,18 @@ const TableProvider = ({ children }) => {
         lastModified: selectedXlsxFile?.lastModified,
         data,
       });
+      if (location.pathname.includes('/reviewTable/')) {
+        fetchExcelData();
+      }
     } catch (error) {
       console.error("Error saving data:", error);
     }
-  }, [selectedXlsxFile]);
+  }, [selectedXlsxFile, fetchExcelData, location.pathname]);
 
-  const debouncedSave = useCallback(
-    debounce((data) => {
+  const debouncedSave = useMemo(
+    () => debounce((data) => {
       saveReviewTableData(data);
-    }, 1000), // 1000ms = 1초
+    }, 1000), //변경후 1초후 저장
     [saveReviewTableData]
   );
 
@@ -67,15 +70,35 @@ const TableProvider = ({ children }) => {
     );
   }, [setReviewTableData]);
 
+  // 앱 시작 시 localStorage에서 복원
   useEffect(() => {
-    if (location.pathname.includes('/reviewTable/')) {
+    const saved = localStorage.getItem('selectedXlsxFile');
+    if (saved) {
+      setSelectedXlsxFile(JSON.parse(saved));
+    }
+  }, []);
+
+  // selectedXlsxFile이 바뀔 때마다 localStorage에 저장
+  useEffect(() => {
+    if (selectedXlsxFile) {
+      localStorage.setItem('selectedXlsxFile', JSON.stringify(selectedXlsxFile));
+    }
+  }, [selectedXlsxFile]);
+
+  // reviewTable 진입 시 한 번만 실행
+  useEffect(() => {
+    if (location.pathname.includes('/reviewTable/') && selectedXlsxFile) {
       fetchExcelData();
     }
-    if (reviewTableData.length > 0) {
+  }, [location.pathname, selectedXlsxFile, fetchExcelData]);
+
+  // 자동 저장
+  useEffect(() => {
+    if (selectedXlsxFile && reviewTableData.length > 0) {
       debouncedSave(reviewTableData);
     }
     return () => debouncedSave.cancel();
-  }, [fetchExcelData, location.pathname, reviewTableData, debouncedSave]); 
+  }, [selectedXlsxFile, debouncedSave]);
 
   return (
     <TableContext.Provider 

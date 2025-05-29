@@ -42,12 +42,13 @@ const Line = styled.div`
 `;
 
 const ReviewTable = () => {
-  const { reviewTableData, setReviewTableData, handleTagSelect } = useContext(TableContext);
+  const { reviewTableData, handleTagSelect } = useContext(TableContext);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
-  const [sortValue, setSortValue] = useState('date-asc');
+  const [sortValue, setSortValue] = useState('original');
 
   const openDrawer = (index) => {
     setSelectedRowIndex(index);
@@ -55,6 +56,7 @@ const ReviewTable = () => {
   };
 
   const options = [
+    { label: '기본 순서', value: 'original' },
     { label: '집행일자 오름차순', value: 'date-asc' },
     { label: '집행일자 내림차순', value: 'date-desc' },
     { label: '집행용도 오름차순', value: 'use-asc' },
@@ -84,6 +86,8 @@ const ReviewTable = () => {
   const getSortedData = (data, sortKey) => {
     const sorted = [...data];
     switch (sortKey) {
+      case 'original':
+        return sorted.sort((a, b) => a._originalIndex - b._originalIndex);
       case 'date-asc':
         return sorted.sort((a, b) => (a['집행실행일자'] || '').localeCompare(b['집행실행일자'] || ''));
       case 'date-dsc':
@@ -110,15 +114,16 @@ const ReviewTable = () => {
   };
 
   const filteredData = searchTerm.trim()
-    ? reviewTableData.filter((row) =>
-        Object.values(row).some(
-          (value) =>
-            typeof value === 'string' &&
-            value.toLowerCase().includes(searchTerm.toLowerCase())
+    ? reviewTableData
+        .filter((row) =>
+          Object.values(row).some(
+            (value) =>
+              typeof value === 'string' &&
+              value.toLowerCase().includes(searchTerm.toLowerCase())
+          )
         )
-      )
     : reviewTableData;
-  
+
   const sortedData = getSortedData(filteredData, sortValue);
 
   return (
@@ -139,55 +144,55 @@ const ReviewTable = () => {
           <Table columns={columns} width="calc(100% - 60px)">
             {sortedData.length > 0 ? (
               sortedData.map((row, index) => (
-              <div key={index} style={{ width: '100%', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
-                <RowContainer onClick={() => openDrawer(index)} width="calc(100% - 60px)">
-                  {columns.map((column, colIndex) => {
-                    const value = row[column.label];
+                <div key={index} style={{ width: '100%', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
+                  <RowContainer onClick={() => openDrawer(index)} width="calc(100% - 60px)">
+                    {columns.map((column, colIndex) => {
+                      const value = row[column.label];
 
-                    if (column.label === '집행금액' && typeof value === 'number') {
-                      return (
-                        <RowItem key={colIndex} width={column.width} >
-                          {value.toLocaleString()}
-                        </RowItem>
-                      );
-                    } else if (column.label === '증빙구분' || column.label === '세목명') {
-                      return (
-                        <RowItem key={colIndex} width={column.width}>
-                          <div onMouseDown={(e) => e.stopPropagation()} onClick={e => e.stopPropagation()}>
-                          <TagDropdown
-                            label={column.label}
-                            value={value}
-                            onSelect={(selected) => handleTagSelect(index, column.label, selected)}
-                          />
-                          </div>
-                        </RowItem>
-                      );
-                    } else {
-                      return (
-                        <RowItem key={colIndex} width={column.width}>
-                          {value ?? '-'}
-                        </RowItem>
-                      );
-                    }
-                  })}
-                </RowContainer>
-                <Line />
-              </div>
-            ))
-          ) : (
-            <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
-          )}
+                      if (column.label === '집행금액' && typeof value === 'number') {
+                        return (
+                          <RowItem key={colIndex} width={column.width} >
+                            {value.toLocaleString()}
+                          </RowItem>
+                        );
+                      } else if (column.label === '증빙구분' || column.label === '세목명') {
+                        return (
+                          <RowItem key={colIndex} width={column.width}>
+                            <div onMouseDown={(e) => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                              <TagDropdown
+                                label={column.label}
+                                value={value}
+                                onSelect={(selected) => handleTagSelect(index, column.label, selected)}
+                              />
+                            </div>
+                          </RowItem>
+                        );
+                      } else {
+                        return (
+                          <RowItem key={colIndex} width={column.width}>
+                            {value ?? '-'}
+                          </RowItem>
+                        );
+                      }
+                    })}
+                  </RowContainer>
+                  <Line />
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
+            )}
           </Table>
         )}
-        {drawerOpen && selectedRowIndex !== null && (
-          <Drawer
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            width={750}
-            row={filteredData[selectedRowIndex]}
-            initialIndex={selectedRowIndex}
-          />
-        )}
+          {sortedData.length > 0 && (
+            <Drawer
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+              width={750}
+              data={sortedData}
+              initialIndex={selectedRowIndex}
+            />
+          )}
       </BaseContainer>
     </BaseContainer>
   );

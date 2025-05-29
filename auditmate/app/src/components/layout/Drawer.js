@@ -17,14 +17,13 @@ const Overlay = styled.div`
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.2);
-  z-index: 98; // SidebarWrapper보다 낮게
 `;
 
 const RowContainer = styled.div`
   width: ${({ $width }) => $width || 'calc(100% - 60px)'};
-  align-items: center;
+  align-items: stretch;
   padding: 20px 20px;
-  display: inline-flex;
+  display: flex;
   justify-content: space-between;
 `;
 
@@ -56,8 +55,11 @@ const SidebarWrapper = styled.div`
   height: 100%;
   z-index: 99;
   width: ${({ width }) => width}px;
-  transform: ${({ $isOpen, $width }) => ($isOpen ? 'translateX(0)' : `translateX(${$width}px)`)};
-  transition: transform 0.3s ease-in-out;
+  /* 슬라이드 애니메이션: 오른쪽에서 왼쪽으로 */
+  transform: ${({ $isOpen }) =>
+    $isOpen ? 'translateX(0)' : 'translateX(100%)'};
+  transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+  will-change: transform;
 `;
 
 const Content = styled.div`
@@ -82,29 +84,30 @@ const Section = styled.div`
   height: 91px;
 `;
 
-const FooterSection = styled(Section)`
+const HeaderSection = styled.div`
+  display: flex;
   justify-content: flex-end;
+  flex-direction: row;
+  align-items: center;
   gap: 20px;
 `;
 
-const Drawer = ({ open = false, width = 750, row, onClose }) => {
+const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
   const { sideRef, memo, setMemo, note, setNote } = useContext(DrawerContext);
-  const {selectedXlsxFile} = useContext(TableContext);
-  const { reviewTableData, handleTagSelect } = useContext(TableContext);
+  const { selectedXlsxFile } = useContext(TableContext);
+  const { handleTagSelect } = useContext(TableContext);
 
-  const [selectedIndex, setSelectedIndex] = useState(
-    () => reviewTableData.findIndex((r) => r === row)
-  );
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+  const currentRow = data[selectedIndex];
 
-  const currentRow = reviewTableData[selectedIndex];
+  useEffect(() => {
+    if (open) setSelectedIndex(initialIndex);
+    // open이 true가 될 때만 초기화
+    // 또는 open && selectedIndex !== initialIndex 체크도 가능
+  }, [open, initialIndex]);
 
-  const handlePrev = () => {
-    setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
-  };
-
-  const handleNext = () => {
-    setSelectedIndex(prev => (prev < reviewTableData.length - 1 ? prev + 1 : prev));
-  };
+  const handlePrev = () => setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
+  const handleNext = () => setSelectedIndex(prev => (prev < data.length - 1 ? prev + 1 : prev));
 
   const drawerRef = useRef();
 
@@ -136,11 +139,17 @@ const Drawer = ({ open = false, width = 750, row, onClose }) => {
       <Container style={{ pointerEvents: open ? "auto" : "none" }}>
         <SidebarWrapper ref={sideRef} $isOpen={open} $width={width}>
           <Content>
+            <HeaderSection>
+              <div style={{ width: '500px', padding: '0 20px' }}>
+                <UsageBar progress={selectedXlsxFile?.progress} width={500}/>
+              </div>
+              <Button onClick={handlePrev}>Before</Button>
+              <Button onClick={handleNext} secondary>Next</Button>
+            </HeaderSection>
             <Table columns={columns} width="100%">
               <RowContainer $width="100%">
                 {currentRow && columns.map((column, index) => {
                   const value = currentRow[column.label];
-
                   if (column.label === '집행금액' && typeof value === 'number') {
                     return (
                       <RowItem key={index} width={column.width}>
@@ -154,7 +163,7 @@ const Drawer = ({ open = false, width = 750, row, onClose }) => {
                           label={column.label}
                           value={value}
                           onSelect={(selected) =>
-                            handleTagSelect?.(selectedIndex, column.label, selected)
+                            handleTagSelect?.(currentRow._originalIndex, column.label, selected)
                           }
                         />
                       </RowItem>
@@ -169,29 +178,26 @@ const Drawer = ({ open = false, width = 750, row, onClose }) => {
                 })}
               </RowContainer>
             </Table>
-            <DocumentList category={row['세목명']} proof={row['증빙구분']} />
-            <ReviewContent />
-            <Section>
-              <MemoInput
-                label="메모"
-                placeholder="메모를 입력해주세요"
-                value={memo}
-                onChange={e => setMemo(e.target.value)}
-              />
-              <MemoInput
-                label="보완사항"
-                placeholder="보완사항을 입력해주세요"
-                value={note}
-                onChange={e => setNote(e.target.value)}
-              />
-            </Section>
-            <FooterSection>
-              <div style={{ width: '500px', padding: '0 20px' }}>
-                <UsageBar progress={selectedXlsxFile?.progress} width={500}/>
-              </div>
-              <Button onClick={handlePrev}>Before</Button>
-              <Button onClick={handleNext} secondary>Next</Button>
-            </FooterSection>
+            {currentRow && (
+              <>
+                <DocumentList category={currentRow['세목명']} proof={currentRow['증빙구분']} />
+                <ReviewContent />
+                <Section>
+                  <MemoInput
+                    label="메모"
+                    placeholder="메모를 입력해주세요"
+                    value={memo}
+                    onChange={e => setMemo(e.target.value)}
+                  />
+                  <MemoInput
+                    label="보완사항"
+                    placeholder="보완사항을 입력해주세요"
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                  />
+                </Section>
+              </>
+            )}
           </Content>
         </SidebarWrapper>
       </Container>
