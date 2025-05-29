@@ -45,7 +45,7 @@ const Line = styled.div`
 `;
 
 const ReviewTable = () => {
-  const { tableData, handleTagSelect } = useContext(TableContext);
+  const { tableData: rawData, handleTagSelect, setTableData } = useContext(TableContext);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,6 +53,8 @@ const ReviewTable = () => {
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
   const [sortValue, setSortValue] = useState('original');
   const [expandedRows, setExpandedRows] = useState({});
+
+  const tableData = rawData.map((row, idx) => ({ ...row, _originalIndex: idx }));
 
   const openDrawer = (index) => {
     setSelectedRowIndex(index);
@@ -219,6 +221,15 @@ const ReviewTable = () => {
             width={750}
             data={sortedData}
             initialIndex={selectedRowIndex}
+            onSave={(currentRow, 수정값) => {
+              setTableData(prev =>
+                prev.map((row, idx) =>
+                  row._originalIndex === currentRow._originalIndex
+                    ? { ...row, ...수정값 }
+                    : row
+                )
+              );
+            }}
           />
         )}
       </BaseContainer>

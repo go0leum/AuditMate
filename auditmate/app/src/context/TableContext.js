@@ -39,21 +39,28 @@ const TableProvider = ({ children }) => {
     }
   }, [selectedXlsxFile]); 
 
+  const prepareTableDataForSave = (data) =>
+    data.map(row => ({
+      ...row,
+      검토내용:
+        row.검토내용 && typeof row.검토내용 === 'object'
+          ? JSON.stringify(row.검토내용)
+          : row.검토내용,
+    }));
+
   const saveTableData = useCallback(async (data) => {
     try {
+      const preparedData = prepareTableDataForSave(data);
       await axios.post('http://localhost:8000/api/save-xlsx/', {
         folderName: selectedXlsxFile?.folderName,
         xlsxFile: selectedXlsxFile?.xlsxFile,
         lastModified: selectedXlsxFile?.lastModified,
-        data,
+        data: preparedData,
       });
-      if (location.pathname.includes('/reviewTable/')) {
-        fetchExcelData();
-      }
     } catch (error) {
       console.error("Error saving data:", error);
     }
-  }, [selectedXlsxFile, fetchExcelData, location.pathname]);
+  }, [selectedXlsxFile]);
 
   const debouncedSave = useMemo(
     () => debounce((data) => {

@@ -66,10 +66,10 @@ const RecentFile = () => {
   ];
 
   const options = [
+    { label: '날짜 내림차순', value: 'date-dsc' },
+    { label: '날짜 오름차순', value: 'date-asc' },
     { label: '파일이름 오름차순', value: 'name-asc' },
     { label: '파일이름 내림차순', value: 'name-dsc' },
-    { label: '날짜 오름차순', value: 'date-asc' },
-    { label: '날짜 내림차순', value: 'date-dsc' },
     { label: '진행도 오름차순', value: 'progress-asc' },
     { label: '진행도 내림차순', value: 'progress-desc' },
   ];

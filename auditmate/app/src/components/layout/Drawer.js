@@ -59,6 +59,7 @@ const SidebarWrapper = styled.div`
     $isOpen ? 'translateX(0)' : 'translateX(100%)'};
   transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
   will-change: transform;
+  overflow-y: scroll; // ← 추가: 항상 스크롤 표시
 `;
 
 const Content = styled.div`
@@ -69,7 +70,6 @@ const Content = styled.div`
   flex-direction: column;
   gap: 20px;
   height: 100%;
-  overflow-y: auto;
   box-sizing: border-box;
 `;
 
@@ -91,7 +91,7 @@ const HeaderSection = styled.div`
 `;
 
 const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
-  const { sideRef, memo, setMemo, note, setNote } = useContext(DrawerContext);
+  const { sideRef, setMemo, setNote } = useContext(DrawerContext);
   const { selectedXlsxFile, handleTagSelect, setTableData } = useContext(TableContext);
 
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
@@ -116,9 +116,31 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
   const handleReviewContentSave = (newContent) => {
     setReviewContent(newContent);
     setTableData(prev =>
+      prev.map((row) =>
+        row._originalIndex === currentRow._originalIndex
+          ? { ...row, 검토내용: newContent }
+          : row
+      )
+    );
+  };
+
+  const handleMemoChange = (e) => {
+    setMemo(e.target.value);
+    setTableData(prev =>
       prev.map((row, idx) =>
         idx === selectedIndex
-          ? { ...row, 검토내용: newContent } // 대괄호 제거
+          ? { ...row, 메모: e.target.value }
+          : row
+      )
+    );
+  };
+
+  const handleNoteChange = (e) => {
+    setNote(e.target.value);
+    setTableData(prev =>
+      prev.map((row, idx) =>
+        idx === selectedIndex
+          ? { ...row, 보완사항: e.target.value }
           : row
       )
     );
@@ -210,14 +232,14 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
                   <MemoInput
                     label="메모"
                     placeholder="메모를 입력해주세요"
-                    value={memo}
-                    onChange={e => setMemo(e.target.value)}
+                    value={currentRow['메모'] ?? ''}
+                    onChange={handleMemoChange}
                   />
                   <MemoInput
                     label="보완사항"
                     placeholder="보완사항을 입력해주세요"
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
+                    value={currentRow['보완사항'] ?? ''}
+                    onChange={handleNoteChange}
                   />
                 </Section>
               </>
