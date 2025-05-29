@@ -207,12 +207,4 @@ sketch
 # .pnp.*
 
 # Uploaded files
-*Upload_File/*
-*.zip
-*.tar.gz
-*.xlsx
-*.xls
-*.csv
-*.json
-*.xml
-*.pdf
+Upload_file/
