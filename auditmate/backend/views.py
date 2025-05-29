@@ -176,6 +176,18 @@ def read_xlsx(request):
             df = pd.read_excel(file_path)
             df.columns = df.columns.str.strip()
             df = df.replace({np.nan: None})
+
+            # '검토내용' 컬럼이 문자열이면 dict로 변환
+            if "검토내용" in df.columns:
+                def parse_review(val):
+                    if isinstance(val, str):
+                        try:
+                            return json.loads(val)
+                        except Exception:
+                            return val
+                    return val
+                df["검토내용"] = df["검토내용"].apply(parse_review)
+
             progress = calculate_progress(df)
 
             metadata_path = os.path.join(UPLOAD_DIR, folderName, "metadata.json")
