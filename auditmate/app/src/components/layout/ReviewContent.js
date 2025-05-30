@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import rules from '../../data/document_rule.json';
+import document_rule from '../../data/document_rule.json';
 import InputField from '../common/InputField';
-
-import { DrawerContext } from '../../context/DrawerContext';
 
 const Wrapper = styled.div`
   align-self: stretch;
@@ -67,7 +65,7 @@ const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
     onChange && onChange(updated);
   };
 
-  const fields = rules["서류별기입항목"][selectedDocument] || [];
+  const fields = document_rule["서류별기입항목"][selectedDocument] || [];
 
   const summaryText = selectedDocument && fields.length > 0
     ? `${selectedDocument} - ${fields.map(f => `${f}: ${localContent[selectedDocument]?.[f] || ''}`).join(', ')}`

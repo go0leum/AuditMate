@@ -1,8 +1,6 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import data from '../../data/document_rule.json';
-
-import { DrawerContext } from '../../context/DrawerContext';
+import document_rule from '../../data/document_rule.json';
 
 const Wrapper = styled.div`
   align-self: stretch;
@@ -89,8 +87,8 @@ const ButtonText = styled.div`
 `;
 
 const DocumentList = ({ category, proof, selectedDocument, setSelectedDocument }) => {
-  const documentSections = data.세목별서류[category] || {};
-  const proofSections = data.증빙구분별서류[proof] || {};
+  const documentSections = document_rule.세목별서류[category] || {};
+  const proofSections = document_rule.증빙구분별서류[proof] || {};
 
   const handleClick = (doc) => {
     setSelectedDocument(doc);

@@ -10,7 +10,7 @@ import TopBar from '../components/layout/TopBar';
 import SideBar from '../components/layout/SideBar';
 import BaseContainer from '../components/layout/BaseContainer';
 import Table from '../components/layout/Table';
-import UploadModal from '../components/layout/UploadModal';
+import UploadFileModal from '../components/layout/UploadFileModal';
 
 import Button from '../components/common/Button';
 import UsageBar from '../components/common/UsageBar';
@@ -48,7 +48,7 @@ const RowItem = styled.div`
 `;
 
 const RecentFile = () => {
-  const { fileData, handleCheckboxChange, handleExport, selectedFiles } = useContext(FileContext);
+  const { fileData, handleCheckboxChange, handleCheckExport, selectedFiles } = useContext(FileContext);
   const { setSelectedXlsxFile } = useContext(TableContext);
   const { setSelectedDocumentDir }= useContext(DocumentContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,8 +111,8 @@ const RecentFile = () => {
         <TopBar Title='Recent Files' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
-          <UploadModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
-          <Button onClick={handleExport} secondary>Export</Button>
+          <UploadFileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
+          <Button onClick={() => handleCheckExport("xlsxFile")} secondary>Export</Button>
         </div>
         <Table columns={columns}>
           {sortedData.length > 0 ? (
@@ -125,13 +125,13 @@ const RecentFile = () => {
                   $clickable style={{ cursor: 'pointer' }} 
                   onClick={() => {
                     setSelectedXlsxFile(file);
-                    navigate(`/reviewTable/${file.xlsxFile}/`);}}>{file.xlsxFile}</RowItem>
+                    navigate(`/reviewTable/${file.xlsxFile}`);}}>{file.xlsxFile}</RowItem>
                 <RowItem width={250} 
                   $clickable 
                   style={{ cursor: 'pointer' }} 
                   onClick={() => {
                     setSelectedDocumentDir(file);
-                    navigate(`/documentOCR/${file.documentDir}/`);}}>{file.documentDir}</RowItem>
+                    navigate(`/documentOCR/${file.documentDir}`);}}>{file.documentDir}</RowItem>
                 <RowItem width={200}>{file.lastModified}</RowItem>
                 <RowItem width={300}>
                   <UsageBar progress={file.progress} />

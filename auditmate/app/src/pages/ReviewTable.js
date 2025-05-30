@@ -6,7 +6,6 @@ import TopBar from '../components/layout/TopBar';
 import SideBar from '../components/layout/SideBar';
 import BaseContainer from '../components/layout/BaseContainer';
 import Table from '../components/layout/Table';
-import UploadModal from '../components/layout/UploadModal';
 import TagDropdown from '../components/common/TagDropdown';
 import Drawer from '../components/layout/Drawer';
 
@@ -45,16 +44,15 @@ const Line = styled.div`
 `;
 
 const ReviewTable = () => {
-  const { tableData: rawData, handleTagSelect, setTableData } = useContext(TableContext);
+  const { tableData, handleTagSelect, setTableData, handleExport } = useContext(TableContext);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
   const [sortValue, setSortValue] = useState('original');
   const [expandedRows, setExpandedRows] = useState({});
 
-  const tableData = rawData.map((row, idx) => ({ ...row, _originalIndex: idx }));
+  const data = tableData.map((row, idx) => ({ ...row, _originalIndex: idx }));
 
   const openDrawer = (index) => {
     setSelectedRowIndex(index);
@@ -120,7 +118,7 @@ const ReviewTable = () => {
   };
 
   const filteredData = searchTerm.trim()
-    ? tableData
+    ? data
         .filter((row) =>
           Object.values(row).some(
             (value) =>
@@ -128,7 +126,7 @@ const ReviewTable = () => {
               value.toLowerCase().includes(searchTerm.toLowerCase())
           )
         )
-    : tableData;
+    : data;
 
   const sortedData = getSortedData(filteredData, sortValue);
 
@@ -138,11 +136,9 @@ const ReviewTable = () => {
       <BaseContainer direction="column">
         <TopBar Title="Review Table" options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <Button onClick={() => setIsModalOpen(true)}>Import</Button>
-          <UploadModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
-          <Button onClick={() => console.log('Export')} secondary>Export</Button>
+          <Button onClick={() => handleExport} secondary>Export</Button>
         </div>
-        {tableData.length === 0 ? (
+        {data.length === 0 ? (
           <Table columns={columns} width="calc(100% - 60px)">
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
           </Table>

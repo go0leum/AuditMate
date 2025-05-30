@@ -62,6 +62,25 @@ const TableProvider = ({ children }) => {
     }
   }, [selectedXlsxFile]);
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/download/${selectedXlsxFile.folderName}/${selectedXlsxFile.xlsxFile}/`);
+      if (!response.ok) throw new Error(`다운로드 실패: ${selectedXlsxFile.xlsxFile}`);
+
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = selectedXlsxFile.xlsxFile;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      alert("모든 파일이 다운로드되었습니다.");
+    } catch (error) {
+      console.error("파일 다운로드 오류:", error);
+      alert("일부 파일 다운로드 실패!");
+    }
+  };
+
   const debouncedSave = useMemo(
     () => debounce((data) => {
       saveTableData(data);
@@ -111,6 +130,7 @@ const TableProvider = ({ children }) => {
     <TableContext.Provider 
       value={{
         handleTagSelect,
+        handleExport,
         selectedXlsxFile, 
         tableData,
         setSelectedXlsxFile,

@@ -18,8 +18,8 @@ const Label = styled.label`
 `;
 
 const StyledInput = styled.input`
-  width: 180px;
-  height: 30px;
+  width: ${({ $width }) => $width || "180px"};
+  height: ${({ $height }) => $height || "30px"};
   padding: 5px 10px;
   background: white;
   border-radius: 4px;
@@ -39,10 +39,16 @@ const StyledInput = styled.input`
   }
 `;
 
-const InputField = ({ label, value, onChange }) => (
+const InputField = ({ label, value, onChange, width, height }) => (
   <InputWrapper>
     <Label>{label}</Label>
-    <StyledInput value={value} onChange={onChange} placeholder="입력해주세요" />
+    <StyledInput
+      value={value}
+      onChange={onChange}
+      placeholder="입력해주세요"
+      $width={width}
+      $height={height}
+    />
   </InputWrapper>
 );
 

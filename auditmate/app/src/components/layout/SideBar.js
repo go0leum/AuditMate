@@ -1,9 +1,9 @@
 import styled from 'styled-components';
-import { useLocation } from 'react-router-dom';
 import IconButton from '../common/IconButton';
 
 import BrandLogo from '../../assets/icon/XWrist.jpg';
 import FolderIcon from '../../assets/icon/folder icon.png';
+import DocumentIcon from '../../assets/icon/document icon.png';
 
 const SidebarContainer = styled.div`
   padding: 36px 24px;
@@ -47,7 +47,8 @@ const Sidebar = () => {
         <LogoImage src={BrandLogo} alt="Brand Logo" />
       </LogoContainer>
       <MenuList>
-        <IconButton iconSrc={FolderIcon} path='/recentFile/' />
+        <IconButton iconSrc={FolderIcon} path='/recentFile' tooltip="파일 목록"/>
+        <IconButton iconSrc={DocumentIcon} path='/ruleList' tooltip="검토 규칙 목록"/>
       </MenuList>
     </SidebarContainer>
   );
