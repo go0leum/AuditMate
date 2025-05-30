@@ -112,14 +112,14 @@ const RecentFile = () => {
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
           <UploadFileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
-          <Button onClick={() => handleCheckExport("xlsxFile")} secondary>Export</Button>
+          <Button onClick={() => handleCheckExport("file")} secondary>Export</Button>
         </div>
         <Table columns={columns}>
           {sortedData.length > 0 ? (
             sortedData.map((file, index) => (
               <RowContainer key={index}>
                 <RowItem width={100}>
-                  <input type="checkbox" checked={selectedFiles.includes(file)} onChange={() => handleCheckboxChange(file)} />
+                  <input type="checkbox" checked={selectedFiles.includes(file)} onChange={() => handleCheckboxChange("file", file)} />
                 </RowItem>
                 <RowItem width={250} 
                   $clickable style={{ cursor: 'pointer' }} 

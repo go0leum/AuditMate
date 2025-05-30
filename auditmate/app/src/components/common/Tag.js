@@ -1,7 +1,7 @@
-import React from 'react';
+import { useContext } from 'react';
 import styled from 'styled-components';
 
-import category_rule from '../../data/category_rule.json';
+import { RuleContext } from '../../context/RuleContext';
 
 const TagWrapper = styled.div`
   padding: 2px 8px;
@@ -44,7 +44,9 @@ const getTagColor = (label, value, category_rule) => {
 };
 
 const Tag = ({ children, label, value, onClick, ...props }) => {
-  const color = getTagColor(label, value, category_rule) || 'grey'; // fallback도 넣으면 좋아요
+  const { selectedCategoryRule } = useContext(RuleContext);
+
+  const color = getTagColor(label, value, selectedCategoryRule) || 'grey'; // fallback도 넣으면 좋아요
   return (
     <TagWrapper color={color} onClick={onClick} {...props}>
       <TagText color={color}>{children}</TagText>

@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import FileSystemStorage
 
 UPLOAD_DIR = os.path.join(settings.BASE_DIR, "Upload_file")
+RULE_DIR = os.path.join(settings.BASE_DIR, "Rule_file")
 
 def calculate_progress(df):
     """
@@ -40,7 +41,7 @@ def list_files(request):
             sub_folder = sub_folders[0] if sub_folders else "없음"
 
             metadata_path = os.path.join(folder_path, "metadata.json")
-            metadata_info = {"lastModified": "알 수 없음", "progress": 0}
+            metadata_info = {}
 
             # metadata.json 읽기
             if os.path.exists(metadata_path):
@@ -69,8 +70,45 @@ def list_files(request):
                 "folderName": folder_name,
                 "xlsxFile": xlsx_file,
                 "documentDir": sub_folder,
-                "lastModified": metadata_info.get("lastModified", "알 수 없음"),
+                "lastModified": metadata_info["lastModified"],
                 "progress": progress,  # 계산된 진행도 반영
+            })
+
+    return JsonResponse(result, safe=False)
+
+def list_rules(request):
+    if not os.path.exists(RULE_DIR):
+        return JsonResponse({"error": "Rule_file 폴더가 존재하지 않습니다."}, status=404)
+
+    result = []
+    upload_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    for folder_name in os.listdir(RULE_DIR):
+        folder_path = os.path.join(RULE_DIR, folder_name)
+        if os.path.isdir(folder_path):  
+            document_rule_path = os.path.join(folder_path, "document_rule.json")
+            category_rule_path = os.path.join(folder_path, "category_rule.json")
+
+            if os.path.exists(document_rule_path):
+                try:
+                    with open(document_rule_path, "r", encoding="utf-8") as f:
+                        document_rule = json.load(f)
+                except Exception as e:
+                    print(f"Rule 파일 읽기 오류: {e}")
+                    document_rule = {}
+            
+            if os.path.exists(category_rule_path):
+                try:
+                    with open(category_rule_path, "r", encoding="utf-8") as f:
+                        category_rule = json.load(f)
+                except Exception as e:
+                    print(f"Rule 파일 읽기 오류: {e}")
+                    category_rule = {}
+        
+            result.append({
+                "folderName": folder_name,
+                "documentRule": document_rule,
+                "categoryRule": category_rule,
+                "uploadTime": upload_time,
             })
 
     return JsonResponse(result, safe=False)
@@ -151,6 +189,8 @@ def upload_files(request):
         return JsonResponse({"message": "파일 업로드 성공", "metadata": metadata})
 
     return JsonResponse({"error": "잘못된 요청"}, status=400)
+
+
 
 @csrf_exempt
 def read_xlsx(request):
@@ -274,3 +314,46 @@ def save_xlsx(request):
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
+
+@csrf_exempt
+def upload_rules(request):
+    if request.method == "POST":
+        upload_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        rule_dir = os.path.join(RULE_DIR, upload_time)
+        os.makedirs(rule_dir, exist_ok=True)
+
+        metadata = {
+            "folderName": upload_time,
+            "ruleName": None,
+            "documentRule": None,
+            "categoryRule": None,
+            "uploadTime": upload_time,
+        }
+
+        fs = FileSystemStorage(location=rule_dir)
+
+        # 규칙 이름
+        rule_name = request.POST.get("rule_name")
+        if rule_name:
+            metadata["ruleName"] = rule_name
+            metadata["folderName"] = rule_name
+
+        # document_rule.json 저장
+        if "document_rule" in request.FILES:
+            document_rule_file = request.FILES["document_rule"]
+            doc_rule_path = fs.save("document_rule.json", document_rule_file)
+            metadata["documentRule"] = doc_rule_path
+
+        # category_rule.json 저장
+        if "category_rule" in request.FILES:
+            category_rule_file = request.FILES["category_rule"]
+            cat_rule_path = fs.save("category_rule.json", category_rule_file)
+            metadata["categoryRule"] = cat_rule_path
+
+        # metadata.json 저장
+        with open(os.path.join(rule_dir, "metadata.json"), "w", encoding="utf-8") as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=4)
+
+        return JsonResponse({"message": "규칙 업로드 성공", "metadata": metadata})
+
+    return JsonResponse({"error": "잘못된 요청"}, status=400)

@@ -9,37 +9,72 @@ const FileProvider = ({ children }) => {
   const [excelFile, setExcelFile] = useState(null);
   const [attachmentFolder, setAttachmentFolder] = useState(null);
   const [ruleName, setRuleName] = useState(null);
-  const [ruleData, setRuleData] = useState([]);
   const [documentRule, setDocumentRule] = useState(null);
   const [categoryRule, setCategoryRule] = useState(null);
+  const [ruleData, setRuleData] = useState([]);
   const [fileData, setFileData] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedRules, setSelectedRules] = useState([]);
   const location = useLocation(); // 추가
 
-  const handleCheckboxChange = (file) => {
-    setSelectedFiles((prev) =>
-      prev.includes(file) ? prev.filter((f) => f !== file) : [...prev, file]
-    );
+  const handleCheckboxChange = (type, file) => {
+    if (type === "file") {
+      setSelectedFiles((prev) =>
+        prev.some(f => f.xlsxFile === file.xlsxFile)
+          ? prev.filter(f => f.xlsxFile !== file.xlsxFile)
+          : [...prev, file]
+      );
+    } else if (type === "rule") {
+      setSelectedRules((prev) =>
+        prev.some(r => r.folderName === file.folderName)
+          ? prev.filter(r => r.folderName !== file.folderName)
+          : [...prev, file]
+      );
+    } else {
+      console.error("잘못된 타입입니다:", type);
+    }
   };
 
   const handleCheckExport = async (type) => {
-    if (selectedFiles.length === 0) {
-      alert("다운로드할 파일을 선택하세요.");
-      return;
-    }
+    let targets = [];
+    let fileKey = "";
 
-    // 다운로드 가능한 파일만 필터링
-    const filesToDownload = selectedFiles.filter((file) => !!file[type]);
-    if (filesToDownload.length === 0) {
-      alert(`${type}이(가) 존재하는 파일을 선택하세요.`);
+    if (type === "file") {
+      // 파일 다운로드: selectedFiles의 xlsxFile
+      if (selectedFiles.length === 0) {
+        alert("다운로드할 파일을 선택하세요.");
+        return;
+      }
+      targets = selectedFiles.filter((file) => !!file.xlsxFile);
+      fileKey = "xlsxFile";
+      if (targets.length === 0) {
+        alert("다운로드할 엑셀 파일이 존재하는 항목을 선택하세요.");
+        return;
+      }
+    } else if (type === "rule") {
+      // 규칙 다운로드: selectedRules의 ruleFile (또는 원하는 key)
+      if (selectedRules.length === 0) {
+        alert("다운로드할 규칙을 선택하세요.");
+        return;
+      }
+      targets = selectedRules.filter((rule) => !!rule.folderName);
+      fileKey = "folderName";
+      if (targets.length === 0) {
+        alert("다운로드할 규칙 파일이 존재하는 항목을 선택하세요.");
+        return;
+      }
+    } else {
+      alert("잘못된 다운로드 타입입니다.");
       return;
     }
 
     try {
       await Promise.all(
-        filesToDownload.map(async (file) => {
-          const fileName = file[type];
-          const response = await fetch(`http://localhost:8000/api/download/${file.folderName}/${fileName}/`);
+        targets.map(async (item) => {
+          const fileName = item[fileKey];
+          const response = await fetch(
+            `http://localhost:8000/api/download/${item.folderName}/${fileName}/`
+          );
           if (!response.ok) throw new Error(`다운로드 실패: ${fileName}`);
 
           const blob = await response.blob();
@@ -80,6 +115,7 @@ const FileProvider = ({ children }) => {
 
   const handleUpload = async (type) => {
     let formData = new FormData();
+    let uploadUrl = "http://localhost:8000/api/upload/";
 
     if (type === "file") {
       if (excelFile && attachmentFolder) {
@@ -87,6 +123,7 @@ const FileProvider = ({ children }) => {
         Array.from(attachmentFolder).forEach((file) => {
           formData.append("attachment_folder", file);
         });
+        uploadUrl = "http://localhost:8000/api/upload/"; // 파일 업로드용 URL
       } else {
         alert("Excel 파일과 첨부파일 폴더를 선택하세요.");
         return;
@@ -96,8 +133,9 @@ const FileProvider = ({ children }) => {
         formData.append("rule_name", ruleName);
         formData.append("document_rule", documentRule);
         formData.append("category_rule", categoryRule);
+        uploadUrl = "http://localhost:8000/api/rule_upload/"; // 규칙 업로드용 URL (예시)
       } else {
-        alert("규칙 이름과 검토 자료 규칙, 증빙 구분 & 세목명 규칙을 입력력하세요.");
+        alert("규칙 이름과 검토 자료 규칙, 증빙 구분 & 세목명 규칙을 입력하세요.");
         return;
       }
     } else {
@@ -106,7 +144,7 @@ const FileProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/api/upload/", {
+      const response = await fetch(uploadUrl, {
         method: "POST",
         body: formData,
       });
@@ -147,6 +185,7 @@ const FileProvider = ({ children }) => {
         handleCheckboxChange,
         handleCheckExport,
         selectedFiles,
+        selectedRules,
         setAttachmentFolder,
         setExcelFile,
         setDocumentRule,

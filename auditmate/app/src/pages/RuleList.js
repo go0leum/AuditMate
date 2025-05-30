@@ -1,14 +1,14 @@
 import { useContext, useState } from 'react';
 import styled from 'styled-components';
 
-import { FileContext } from '../context/FileContext'
+import { FileContext } from '../context/FileContext';
+import { RuleContext } from '../context/RuleContext';
 
 import TopBar from '../components/layout/TopBar';
 import SideBar from '../components/layout/SideBar';
 import BaseContainer from '../components/layout/BaseContainer';
 import Table from '../components/layout/Table';
 import UploadRuleModal from '../components/layout/UploadRuleModal';
-
 import Button from '../components/common/Button';
 
 const RowContainer = styled.div`
@@ -44,7 +44,8 @@ const RowItem = styled.div`
 `;
 
 const RuleList = () => {
-  const { ruleData, handleCheckboxChange, handleCheckExport, selectedFiles } = useContext(FileContext);
+  const { ruleData, handleCheckboxChange, handleCheckExport, selectedRules } = useContext(FileContext);
+  const { handleSetRule } = useContext(RuleContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortValue, setSortValue] = useState('date-dsc'); 
@@ -94,16 +95,21 @@ const RuleList = () => {
       <BaseContainer direction="column">
         <TopBar Title='Recent Files' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <Button onClick={() => handleSetRule(selectedRules[0])}>Set Rule</Button>
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
           <UploadRuleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
-          <Button onClick={() => handleCheckExport("folderName")} secondary>Export</Button>
+          <Button onClick={() => handleCheckExport("rule")} secondary>Export</Button>
         </div>
         <Table columns={columns}>
           {sortedData.length > 0 ? (
             sortedData.map((rule, index) => (
               <RowContainer key={index}>
                 <RowItem width={100}>
-                  <input type="checkbox" checked={selectedFiles.includes(rule)} onChange={() => handleCheckboxChange(rule)} />
+                  <input
+                    type="checkbox"
+                    checked={(selectedRules || []).some(r => r.folderName === rule.folderName)}
+                    onChange={() => handleCheckboxChange("rule", rule)}
+                  />
                 </RowItem>
                 <RowItem width={500} >{rule.folderName}</RowItem>
                 <RowItem width={500}>{rule.uploadTime}</RowItem>

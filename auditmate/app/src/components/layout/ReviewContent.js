@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import styled from 'styled-components';
-import document_rule from '../../data/document_rule.json';
+
+import { RuleContext } from '../../context/RuleContext';
+
 import InputField from '../common/InputField';
 
 const Wrapper = styled.div`
@@ -48,6 +50,7 @@ const chunkArray = (arr, size) =>
 
 const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
   const [localContent, setLocalContent] = useState(value);
+  const { selectedDocumentRule } = useContext(RuleContext);
 
   useEffect(() => {
     setLocalContent(value);
@@ -65,7 +68,7 @@ const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
     onChange && onChange(updated);
   };
 
-  const fields = document_rule["서류별기입항목"][selectedDocument] || [];
+  const fields = selectedDocumentRule["서류별기입항목"][selectedDocument] || [];
 
   const summaryText = selectedDocument && fields.length > 0
     ? `${selectedDocument} - ${fields.map(f => `${f}: ${localContent[selectedDocument]?.[f] || ''}`).join(', ')}`
