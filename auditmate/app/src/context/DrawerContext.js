@@ -2,7 +2,7 @@ import React, { createContext, useState, useRef, useEffect } from 'react';
 
 export const DrawerContext = createContext();
 
-const DrawerProvider = ({ children }) => {
+const TableDrawerProvider = ({ children }) => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [inputValues, setInputValues] = useState({});
 
@@ -56,4 +56,4 @@ const DrawerProvider = ({ children }) => {
   );
 };
 
-export default DrawerProvider;
+export default TableDrawerProvider;

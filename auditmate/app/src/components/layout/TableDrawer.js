@@ -10,6 +10,7 @@ import Table from "./Table";
 
 import { DrawerContext } from "../../context/DrawerContext";
 import { TableContext } from "../../context/TableContext";
+import { RuleContext } from "../../context/RuleContext";
 import UsageBar from "../common/UsageBar";
 
 const Overlay = styled.div`
@@ -90,36 +91,51 @@ const HeaderSection = styled.div`
   gap: 20px;
 `;
 
-const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
+const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose, sortedData }) => {
   const { sideRef, setMemo, setNote } = useContext(DrawerContext);
-  const { selectedXlsxFile, handleTagSelect, setTableData } = useContext(TableContext);
+  const { selectedXlsxFile, handleTagSelect, tableData, setTableData } = useContext(TableContext);
+  const { selectedCategoryRule } = useContext(RuleContext);
 
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
-  const [reviewContent, setReviewContent] = useState(data[initialIndex]?.['검토내용'] || {});
+  const [reviewContent, setReviewContent] = useState(tableData[initialIndex]?.['검토내용'] || {});
   const [selectedDocument, setSelectedDocument] = useState(
-    data[initialIndex]?.['검토내용'] ? Object.keys(data[initialIndex]['검토내용'])[0] : ''
+    tableData[initialIndex]?.['검토내용'] ? Object.keys(tableData[initialIndex]['검토내용'])[0] : ''
   );
-  const currentRow = data[selectedIndex];
+
+  // currentRow를 사용하지 않고 tableData[selectedIndex]로 직접 접근
+  const getRow = () => tableData[selectedIndex];
 
   useEffect(() => {
     if (open) setSelectedIndex(initialIndex);
   }, [open, initialIndex]);
 
   useEffect(() => {
-    setReviewContent(currentRow?.['검토내용'] || {});
-    setSelectedDocument(currentRow?.['검토내용'] ? Object.keys(currentRow['검토내용'])[0] : '');
-  }, [currentRow]);
+    const row = getRow();
+    setReviewContent(row?.['검토내용'] || {});
+    setSelectedDocument(row?.['검토내용'] ? Object.keys(row['검토내용'])[0] : '');
+  }, [tableData, selectedIndex]);
 
-  const handlePrev = () => setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
-  const handleNext = () => setSelectedIndex(prev => (prev < data.length - 1 ? prev + 1 : prev));
+  const handlePrev = () => {
+    const currentPos = indexes.indexOf(selectedIndex);
+    if (currentPos > 0) {
+      setSelectedIndex(indexes[currentPos - 1]);
+    }
+  };
+
+  const handleNext = () => {
+    const currentPos = indexes.indexOf(selectedIndex);
+    if (currentPos < indexes.length - 1) {
+      setSelectedIndex(indexes[currentPos + 1]);
+    }
+  };
 
   const handleReviewContentSave = (newContent) => {
     setReviewContent(newContent);
     setTableData(prev =>
-      prev.map((row) =>
-        row._originalIndex === currentRow._originalIndex
-          ? { ...row, 검토내용: newContent }
-          : row
+      prev.map((r, idx) =>
+        idx === selectedIndex
+          ? { ...r, 검토내용: newContent }
+          : r
       )
     );
   };
@@ -127,10 +143,10 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
   const handleMemoChange = (e) => {
     setMemo(e.target.value);
     setTableData(prev =>
-      prev.map((row, idx) =>
+      prev.map((r, idx) =>
         idx === selectedIndex
-          ? { ...row, 메모: e.target.value }
-          : row
+          ? { ...r, 메모: e.target.value }
+          : r
       )
     );
   };
@@ -138,15 +154,15 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
   const handleNoteChange = (e) => {
     setNote(e.target.value);
     setTableData(prev =>
-      prev.map((row, idx) =>
+      prev.map((r, idx) =>
         idx === selectedIndex
-          ? { ...row, 보완사항: e.target.value }
-          : row
+          ? { ...r, 보완사항: e.target.value }
+          : r
       )
     );
   };
 
-  const drawerRef = useRef();
+  const TableDrawerRef = useRef();
 
   const columns = [
     { label: '집행실행일자', width: 90 },
@@ -162,13 +178,17 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(e) {
-      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
+      if (TableDrawerRef.current && !TableDrawerRef.current.contains(e.target)) {
         onClose?.();
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, onClose]);
+
+  const row = sortedData[selectedIndex];
+
+  console.log("TableDrawer row:", row);
 
   return (
     <>
@@ -185,8 +205,8 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
             </HeaderSection>
             <Table columns={columns} width="100%">
               <RowContainer $width="100%">
-                {currentRow && columns.map((column, index) => {
-                  const value = currentRow[column.label];
+                {row && columns.map((column, index) => {
+                  const value = row[column.label];
                   if (column.label === '집행금액' && typeof value === 'number') {
                     return (
                       <RowItem key={index} width={column.width}>
@@ -197,10 +217,10 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
                     return (
                       <RowItem key={index} width={column.width}>
                         <TagDropdown
-                          label={column.label}
-                          value={value}
-                          onSelect={(selected) =>
-                            handleTagSelect?.(currentRow._originalIndex, column.label, selected)
+                          options={selectedCategoryRule?.[column.label] || []}
+                          value={row[column.label]}
+                          onSelect={selected =>
+                            handleTagSelect(selectedIndex, column.label, selected)
                           }
                         />
                       </RowItem>
@@ -215,11 +235,11 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
                 })}
               </RowContainer>
             </Table>
-            {currentRow && (
+            {row && (
               <>
                 <DocumentList
-                  category={currentRow['세목명']}
-                  proof={currentRow['증빙구분']}
+                  category={row['세목명']}
+                  proof={row['증빙구분']}
                   selectedDocument={selectedDocument}
                   setSelectedDocument={setSelectedDocument}
                 />
@@ -232,13 +252,13 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
                   <MemoInput
                     label="메모"
                     placeholder="메모를 입력해주세요"
-                    value={currentRow['메모'] ?? ''}
+                    value={row['메모'] ?? ''}
                     onChange={handleMemoChange}
                   />
                   <MemoInput
                     label="보완사항"
                     placeholder="보완사항을 입력해주세요"
-                    value={currentRow['보완사항'] ?? ''}
+                    value={row['보완사항'] ?? ''}
                     onChange={handleNoteChange}
                   />
                 </Section>
@@ -251,4 +271,4 @@ const Drawer = ({ open = false, width = 750, data, initialIndex, onClose }) => {
   );
 };
 
-export default Drawer;
+export default TableDrawer;

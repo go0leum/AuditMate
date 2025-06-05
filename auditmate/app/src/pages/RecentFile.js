@@ -1,8 +1,9 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
 import { FileContext } from '../context/FileContext';
+import { RuleContext } from '../context/RuleContext';
 import { TableContext } from '../context/TableContext';
 import { DocumentContext } from '../context/DocumentContext';
 
@@ -12,6 +13,7 @@ import BaseContainer from '../components/layout/BaseContainer';
 import Table from '../components/layout/Table';
 import UploadFileModal from '../components/layout/UploadFileModal';
 
+import TagDropdown from '../components/common/TagDropdown';
 import Button from '../components/common/Button';
 import UsageBar from '../components/common/UsageBar';
 
@@ -48,7 +50,8 @@ const RowItem = styled.div`
 `;
 
 const RecentFile = () => {
-  const { fileData, handleCheckboxChange, handleCheckExport, selectedFiles } = useContext(FileContext);
+  const { fileData, ruleData, handleCheckboxChange, handleCheckExport, selectedFiles } = useContext(FileContext);
+  const { handleSetRule } = useContext(RuleContext);
   const { setSelectedXlsxFile } = useContext(TableContext);
   const { setSelectedDocumentDir }= useContext(DocumentContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,10 +61,11 @@ const RecentFile = () => {
   const navigate = useNavigate();
 
   const columns = [
-    { label: '선택', width: 100 },
-    { label: '검토 내역', width: 250 },
-    { label: '검토 자료', width: 250 },
-    { label: '수정한 날짜', width: 200 },
+    { label: '선택', width: 50 },
+    { label: '검토 내역', width: 200 },
+    { label: '검토 자료', width: 200 },
+    { label: '검토 규칙', width: 105 },
+    { label: '수정한 시간', width: 150 },
     { label: '진행도', width: 300},
   ];
 
@@ -104,6 +108,20 @@ const RecentFile = () => {
 
   const sortedData = getSortedData(filteredData, sortValue);
 
+  // ruleData가 [{folderName: 'A', ...}, {folderName: 'B', ...}] 형태라면
+  const ruleNameOptions = ruleData.map(rule => rule.folderName);
+
+  // 기본값 자동 설정 (최초 렌더링 또는 fileData/ruleData 변경 시)
+  useEffect(() => {
+    if (fileData.length > 0 && ruleData.length > 0) {
+      const firstRuleName = fileData[0].ruleName;
+      const selectedRule = ruleData.find(r => r.folderName === firstRuleName);
+      if (selectedRule) {
+        handleSetRule(selectedRule);
+      }
+    }
+  }, [fileData, ruleData, handleSetRule]);
+
   return (
     <BaseContainer direction="row">
       <SideBar/>
@@ -118,23 +136,32 @@ const RecentFile = () => {
           {sortedData.length > 0 ? (
             sortedData.map((file, index) => (
               <RowContainer key={index}>
-                <RowItem width={100}>
+                <RowItem width={50}>
                   <input type="checkbox" checked={selectedFiles.includes(file)} onChange={() => handleCheckboxChange("file", file)} />
                 </RowItem>
-                <RowItem width={250} 
+                <RowItem width={200} 
                   $clickable style={{ cursor: 'pointer' }} 
                   onClick={() => {
                     setSelectedXlsxFile(file);
                     navigate(`/reviewTable/${file.xlsxFile}`);}}>{file.xlsxFile}</RowItem>
-                <RowItem width={250} 
+                <RowItem width={200} 
                   $clickable 
                   style={{ cursor: 'pointer' }} 
                   onClick={() => {
                     setSelectedDocumentDir(file);
                     navigate(`/documentOCR/${file.documentDir}`);}}>{file.documentDir}</RowItem>
-                <RowItem width={200}>{file.lastModified}</RowItem>
+                <RowItem width={105}>
+                  <div onMouseDown={(e) => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                    <TagDropdown
+                      options={ruleNameOptions}
+                      value={file.ruleName}
+                      onSelect={(ruleName) => handleSetRule(ruleName, ruleData)}
+                    />
+                  </div>
+                </RowItem>
+                <RowItem width={150}>{file.lastModified}</RowItem>
                 <RowItem width={300}>
-                  <UsageBar progress={file.progress} />
+                  <UsageBar progress={file.progress}/>
                 </RowItem>
               </RowContainer>
             ))

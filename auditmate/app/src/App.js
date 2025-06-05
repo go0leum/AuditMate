@@ -4,13 +4,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import FileProvider from './context/FileContext.js';
 import DocumentProvider from './context/DocumentContext.js';
 import TableProvider from './context/TableContext.js';
-import DrawerProvider from './context/DrawerContext.js';
+import TableDrawerProvider from './context/DrawerContext.js';
 import RuleProvider from './context/RuleContext.js';
 
 import RecentFile from './pages/RecentFile';
 import ReviewTable from './pages/ReviewTable';
 import DocumentOCR from './pages/DocumentOCR.js';
-import Drawer from './components/layout/Drawer.js';
+import TableDrawer from './components/layout/TableDrawer.js';
 import RuleList from './pages/RuleList.js';
 
 function App() {
@@ -19,7 +19,7 @@ function App() {
       <FileProvider>
         <TableProvider>
           <DocumentProvider>
-            <DrawerProvider>
+            <TableDrawerProvider>
               <RuleProvider>
                 <Routes>
                   <Route path="/" element={<Navigate to="/recentFile" replace />} />
@@ -27,10 +27,10 @@ function App() {
                   <Route path="/ruleList" element={<RuleList/>} />
                   <Route path="/reviewTable/:file_name" element={<ReviewTable />} />
                   <Route path="/documentOCR/:file_name" element={<DocumentOCR />} />
-                  <Route path="/reviewTable/:file_name/drawer" element={<Drawer />} />
+                  <Route path="/reviewTable/:file_name/TableDrawer" element={<TableDrawer />} />
                 </Routes>
               </RuleProvider>
-            </DrawerProvider>
+            </TableDrawerProvider>
           </DocumentProvider>
         </TableProvider>
       </FileProvider>

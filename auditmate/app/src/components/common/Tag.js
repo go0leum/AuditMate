@@ -36,17 +36,15 @@ const TAG_STYLES = {
   grey: { wrapper: { background: '#F5F5F5', outline: '#C2C2C2' }, text: { color: '#5F5F5F' } },
 };
 
-const getTagColor = (label, value, category_rule) => {
-  if (!category_rule || !category_rule[label]) return 'grey';
-  const idx = category_rule[label].indexOf(value);
+const getTagColor = (value, options) => {
+  if (!options || !Array.isArray(options)) return 'grey';
+  const idx = options.indexOf(value);
   if (idx === -1) return 'grey';
   return COLOR_ORDER[idx % COLOR_ORDER.length] || 'grey';
 };
 
-const Tag = ({ children, label, value, onClick, ...props }) => {
-  const { selectedCategoryRule } = useContext(RuleContext);
-
-  const color = getTagColor(label, value, selectedCategoryRule) || 'grey'; // fallback도 넣으면 좋아요
+const Tag = ({ children, options, value, onClick, ...props }) => {
+  const color = getTagColor(value, options) || 'grey';
   return (
     <TagWrapper color={color} onClick={onClick} {...props}>
       <TagText color={color}>{children}</TagText>

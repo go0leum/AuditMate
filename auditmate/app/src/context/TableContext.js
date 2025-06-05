@@ -84,14 +84,14 @@ const TableProvider = ({ children }) => {
   const debouncedSave = useMemo(
     () => debounce((data) => {
       saveTableData(data);
-    }, 1000), //변경후 1초후 저장
+    }, 100), //변경후 0.1초후 저장
     [saveTableData]
   );
 
-  const handleTagSelect = useCallback((index, label, selected) => {
-    setTableData(prevData =>
-      prevData.map((row, rowIndex) =>
-        rowIndex === index ? { ...row, [label]: selected } : row
+  const handleTagSelect = useCallback((originalIndex, label, selected) => {
+    setTableData(prev =>
+      prev.map((row, idx) =>
+        idx === originalIndex ? { ...row, [label]: selected } : row
       )
     );
   }, [setTableData]);
@@ -135,6 +135,7 @@ const TableProvider = ({ children }) => {
         tableData,
         setSelectedXlsxFile,
         setTableData,
+        fetchExcelData,
       }}
     >
       {children}

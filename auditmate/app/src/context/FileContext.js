@@ -27,51 +27,20 @@ const FileProvider = ({ children }) => {
     } else if (type === "rule") {
       setSelectedRules((prev) =>
         prev.some(r => r.folderName === file.folderName)
-          ? prev.filter(r => r.folderName !== file.folderName)
-          : [...prev, file]
+          ? [] // 이미 선택된 경우 해제(0개)
+          : [file] // 새로 선택하면 해당 rule만 남김(1개)
       );
     } else {
       console.error("잘못된 타입입니다:", type);
     }
   };
 
-  const handleCheckExport = async (type) => {
-    let targets = [];
-    let fileKey = "";
-
-    if (type === "file") {
-      // 파일 다운로드: selectedFiles의 xlsxFile
-      if (selectedFiles.length === 0) {
-        alert("다운로드할 파일을 선택하세요.");
-        return;
-      }
-      targets = selectedFiles.filter((file) => !!file.xlsxFile);
-      fileKey = "xlsxFile";
-      if (targets.length === 0) {
-        alert("다운로드할 엑셀 파일이 존재하는 항목을 선택하세요.");
-        return;
-      }
-    } else if (type === "rule") {
-      // 규칙 다운로드: selectedRules의 ruleFile (또는 원하는 key)
-      if (selectedRules.length === 0) {
-        alert("다운로드할 규칙을 선택하세요.");
-        return;
-      }
-      targets = selectedRules.filter((rule) => !!rule.folderName);
-      fileKey = "folderName";
-      if (targets.length === 0) {
-        alert("다운로드할 규칙 파일이 존재하는 항목을 선택하세요.");
-        return;
-      }
-    } else {
-      alert("잘못된 다운로드 타입입니다.");
-      return;
-    }
-
+  // 파일 다운로드 함수 분리
+  const downloadFiles = async (targets) => {
     try {
       await Promise.all(
         targets.map(async (item) => {
-          const fileName = item[fileKey];
+          const fileName = item.xlsxFile;
           const response = await fetch(
             `http://localhost:8000/api/download/${item.folderName}/${fileName}/`
           );
@@ -90,6 +59,60 @@ const FileProvider = ({ children }) => {
     } catch (error) {
       console.error("다운로드 오류:", error);
       alert("파일 다운로드 실패!");
+    }
+  };
+
+  // 규칙 다운로드 함수 분리
+  const downloadRules = async (targets) => {
+    try {
+      await Promise.all(
+        targets.map(async (item) => {
+          const response = await fetch(
+            `http://localhost:8000/api/download_rule/${item.folderName}/`
+          );
+          if (!response.ok) throw new Error(`다운로드 실패: ${item.folderName}`);
+          const blob = await response.blob();
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `${item.folderName}.zip`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        })
+      );
+      alert("파일이 다운로드되었습니다.");
+    } catch (error) {
+      console.error("다운로드 오류:", error);
+      alert("파일 다운로드 실패!");
+    }
+  };
+
+  const handleCheckExport = async (type) => {
+    if (type === "file") {
+      if (selectedFiles.length === 0) {
+        alert("다운로드할 파일을 선택하세요.");
+        return;
+      }
+      const targets = selectedFiles.filter((file) => !!file.xlsxFile);
+      if (targets.length === 0) {
+        alert("다운로드할 엑셀 파일이 존재하는 항목을 선택하세요.");
+        return;
+      }
+      await downloadFiles(targets);
+    } else if (type === "rule") {
+      if (selectedRules.length === 0) {
+        alert("다운로드할 규칙을 선택하세요.");
+        return;
+      }
+      const targets = selectedRules.filter((rule) => !!rule.folderName);
+      if (targets.length === 0) {
+        alert("다운로드할 규칙 파일이 존재하는 항목을 선택하세요.");
+        return;
+      }
+      await downloadRules(targets);
+    } else {
+      alert("잘못된 다운로드 타입입니다.");
+      return;
     }
   };
 
@@ -192,6 +215,7 @@ const FileProvider = ({ children }) => {
         setCategoryRule,
         setRuleName,
         handleUpload,
+        fetchFileData,
       }}
     >
       {children}
