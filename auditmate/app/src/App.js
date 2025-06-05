@@ -17,10 +17,10 @@ function App() {
   return (
     <Router>
       <FileProvider>
-        <TableProvider>
-          <DocumentProvider>
-            <TableDrawerProvider>
-              <RuleProvider>
+        <RuleProvider>
+          <TableProvider>
+            <DocumentProvider>
+              <TableDrawerProvider>
                 <Routes>
                   <Route path="/" element={<Navigate to="/recentFile" replace />} />
                   <Route path="/recentFile" element={<RecentFile />} />
@@ -29,10 +29,10 @@ function App() {
                   <Route path="/documentOCR/:file_name" element={<DocumentOCR />} />
                   <Route path="/reviewTable/:file_name/TableDrawer" element={<TableDrawer />} />
                 </Routes>
-              </RuleProvider>
-            </TableDrawerProvider>
-          </DocumentProvider>
-        </TableProvider>
+              </TableDrawerProvider>
+            </DocumentProvider>
+          </TableProvider>
+        </RuleProvider>
       </FileProvider>
     </Router>
   );

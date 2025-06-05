@@ -89,8 +89,13 @@ const ButtonText = styled.div`
 const DocumentList = ({ category, proof, selectedDocument, setSelectedDocument }) => {
   const { selectedDocumentRule } = useContext(RuleContext);
 
-  const documentSections = selectedDocumentRule.세목별서류[category] || {};
-  const proofSections = selectedDocumentRule.증빙구분별서류[proof] || {};
+  // 방어 코드 추가
+  if (!selectedDocumentRule) {
+    return null; // 또는 로딩 메시지/빈 UI 등
+  }
+
+  const documentSections = selectedDocumentRule.세목별서류?.[category] || {};
+  const proofSections = selectedDocumentRule.증빙구분별서류?.[proof] || {};
 
   const handleClick = (doc) => {
     setSelectedDocument(doc);

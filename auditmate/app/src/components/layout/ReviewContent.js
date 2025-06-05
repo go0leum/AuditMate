@@ -68,6 +68,11 @@ const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
     onChange && onChange(updated);
   };
 
+  // 방어 코드 추가
+  if (!selectedDocumentRule) {
+    return null; // 또는 로딩 메시지/빈 UI 등
+  }
+
   const fields = selectedDocumentRule["서류별기입항목"][selectedDocument] || [];
 
   const summaryText = selectedDocument && fields.length > 0

@@ -1,14 +1,42 @@
-import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import axios from 'axios';
 import debounce from 'lodash.debounce';
 import { useLocation } from 'react-router-dom';
+import { RuleContext } from './RuleContext';
 
 export const TableContext = createContext();
 
 const TableProvider = ({ children }) => {
   const location = useLocation();
+  const { ruleLoading, selectedCategoryRule, selectedDocumentRule } = useContext(RuleContext);
   const [selectedXlsxFile, setSelectedXlsxFile] = useState(null);
   const [tableData, setTableData] = useState([]);
+
+  // 앱 시작 시 localStorage에서 복원
+  useEffect(() => {
+    const savedFile = localStorage.getItem('selectedXlsxFile');
+    if (savedFile) {
+      setSelectedXlsxFile(JSON.parse(savedFile));
+    }
+    const savedTableData = localStorage.getItem('tableData');
+    if (savedTableData) {
+      setTableData(JSON.parse(savedTableData));
+    }
+  }, []);
+
+  // selectedXlsxFile이 바뀔 때마다 localStorage에 저장
+  useEffect(() => {
+    if (selectedXlsxFile) {
+      localStorage.setItem('selectedXlsxFile', JSON.stringify(selectedXlsxFile));
+    }
+  }, [selectedXlsxFile]);
+
+  // tableData가 바뀔 때마다 localStorage에 저장
+  useEffect(() => {
+    if (tableData) {
+      localStorage.setItem('tableData', JSON.stringify(tableData));
+    }
+  }, [tableData]);
 
   const fetchExcelData = useCallback(async () => {
     if (!selectedXlsxFile) return;
@@ -96,27 +124,26 @@ const TableProvider = ({ children }) => {
     );
   }, [setTableData]);
 
-  // 앱 시작 시 localStorage에서 복원
+  // reviewTable 진입 시 규칙이 모두 준비되면 항상 서버에서 데이터 fetch
   useEffect(() => {
-    const saved = localStorage.getItem('selectedXlsxFile');
-    if (saved) {
-      setSelectedXlsxFile(JSON.parse(saved));
-    }
-  }, []);
-
-  // selectedXlsxFile이 바뀔 때마다 localStorage에 저장
-  useEffect(() => {
-    if (selectedXlsxFile) {
-      localStorage.setItem('selectedXlsxFile', JSON.stringify(selectedXlsxFile));
-    }
-  }, [selectedXlsxFile]);
-
-  // reviewTable 진입 시 한 번만 실행
-  useEffect(() => {
-    if (location.pathname.includes('/reviewTable/') && selectedXlsxFile) {
+    if (
+      location.pathname.includes('/reviewTable/') &&
+      selectedXlsxFile &&
+      !ruleLoading &&
+      selectedCategoryRule &&
+      selectedDocumentRule
+    ) {
       fetchExcelData();
     }
-  }, [location.pathname, selectedXlsxFile, fetchExcelData]);
+    // fetchExcelData는 useCallback이므로 의존성 배열에 포함
+  }, [
+    location.pathname,
+    selectedXlsxFile,
+    ruleLoading,
+    selectedCategoryRule,
+    selectedDocumentRule,
+    fetchExcelData,
+  ]);
 
   // 자동 저장
   useEffect(() => {
@@ -136,6 +163,7 @@ const TableProvider = ({ children }) => {
         setSelectedXlsxFile,
         setTableData,
         fetchExcelData,
+        ruleLoading,
       }}
     >
       {children}

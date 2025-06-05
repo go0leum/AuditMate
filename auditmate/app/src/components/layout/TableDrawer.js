@@ -188,8 +188,6 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
 
   const row = sortedData[selectedIndex];
 
-  console.log("TableDrawer row:", row);
-
   return (
     <>
       <Overlay open={open} onClick={onClose} />

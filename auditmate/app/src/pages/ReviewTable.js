@@ -2,15 +2,18 @@ import { useContext, useState } from 'react';
 import styled from 'styled-components';
 
 import { TableContext } from '../context/TableContext';
+import { FileContext } from '../context/FileContext';
+
 import TopBar from '../components/layout/TopBar';
 import SideBar from '../components/layout/SideBar';
 import BaseContainer from '../components/layout/BaseContainer';
 import Table from '../components/layout/Table';
 import TagDropdown from '../components/common/TagDropdown';
-import Drawer from '../components/layout/Drawer';
+import TableDrawer from '../components/layout/TableDrawer';
 
 import Button from '../components/common/Button';
 import RowExpand from '../components/common/RowExpand';
+import { RuleContext } from '../context/RuleContext';
 
 const RowContainer = styled.div`
   width: ${({ $width }) => $width || 'calc(100% - 60px)'};
@@ -33,7 +36,6 @@ const RowItem = styled.div`
   font-weight: 600;
   word-wrap: break-word;
   position: relative;
-
 `;
 
 const Line = styled.div`
@@ -44,19 +46,25 @@ const Line = styled.div`
 `;
 
 const ReviewTable = () => {
-  const { tableData, handleTagSelect, setTableData, handleExport } = useContext(TableContext);
+  const { tableData, handleTagSelect, handleExport, fetchExcelData, selectedXlsxFile } = useContext(TableContext);
+  const { selectedCategoryRule, selectedDocumentRule, ruleLoading } = useContext(RuleContext);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedRowIndex, setSelectedRowIndex] = useState(null);
+  const [TableDrawerOpen, setTableDrawerOpen] = useState(false);
   const [sortValue, setSortValue] = useState('original');
   const [expandedRows, setExpandedRows] = useState({});
+  const [drawerIndex, setDrawerIndex] = useState(0);
 
   const data = tableData.map((row, idx) => ({ ...row, _originalIndex: idx }));
 
-  const openDrawer = (index) => {
-    setSelectedRowIndex(index);
-    setDrawerOpen(true);
+  const openTableDrawer = (index) => {
+    setDrawerIndex(index);
+    setTableDrawerOpen(true);
+  };
+
+  const handleDrawerClose = () => {
+    setTableDrawerOpen(false);
+    fetchExcelData(); // 예시: tableData 새로고침
   };
 
   const options = [
@@ -130,6 +138,29 @@ const ReviewTable = () => {
 
   const sortedData = getSortedData(filteredData, sortValue);
 
+  // --- 데이터 준비 전에는 안내문만 출력 ---
+  if (
+    ruleLoading ||
+    !selectedXlsxFile ||
+    !selectedCategoryRule ||
+    !selectedDocumentRule
+  ) {
+    return (
+      <BaseContainer direction="row">
+        <SideBar />
+        <BaseContainer direction="column">
+          <TopBar Title="Review Table" options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
+          <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+            <Button onClick={() => handleExport} secondary>Export</Button>
+          </div>
+          <Table columns={columns} width="calc(100% - 60px)">
+            <div style={{ padding: '20px', color: '#888' }}>로딩 중입니다...</div>
+          </Table>
+        </BaseContainer>
+      </BaseContainer>
+    );
+  }
+  // --- 데이터 준비 후 기존 테이블 렌더링 ---
   return (
     <BaseContainer direction="row">
       <SideBar />
@@ -144,10 +175,16 @@ const ReviewTable = () => {
           </Table>
         ) : (
           <Table columns={columns} width="calc(100% - 60px)">
-            {sortedData.length > 0 ? (
+            {sortedData.length === 0 ? (
+              <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
+            ) : !selectedCategoryRule ? (
+              <div style={{ padding: '20px', color: '#d32f2f' }}>
+                문서 규칙을 불러올 수 없습니다.
+              </div>
+            ) : (
               sortedData.map((row, index) => (
                 <div key={index} style={{ width: '100%', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
-                  <RowContainer onClick={() => openDrawer(index)} width="calc(100% - 60px)">
+                  <RowContainer onClick={() => openTableDrawer(index)} width="calc(100% - 60px)">
                     {columns.map((column, colIndex) => {
                       const value = row[column.label];
 
@@ -162,9 +199,9 @@ const ReviewTable = () => {
                           <RowItem key={colIndex} width={column.width}>
                             <div onMouseDown={(e) => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                               <TagDropdown
-                                label={column.label}
+                                options={selectedCategoryRule?.[column.label] || []}
                                 value={value}
-                                onSelect={(selected) => handleTagSelect(index, column.label, selected)}
+                                onSelect={(selected) => handleTagSelect(row._originalIndex, column.label, selected)}
                               />
                             </div>
                           </RowItem>
@@ -205,27 +242,17 @@ const ReviewTable = () => {
                   <Line />
                 </div>
               ))
-            ) : (
-              <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
             )}
           </Table>
         )}
         {sortedData.length > 0 && (
-          <Drawer
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
+          <TableDrawer
+            open={TableDrawerOpen}
+            onClose={handleDrawerClose}
             width={750}
-            data={sortedData}
-            initialIndex={selectedRowIndex}
-            onSave={(currentRow, 수정값) => {
-              setTableData(prev =>
-                prev.map((row, idx) =>
-                  row._originalIndex === currentRow._originalIndex
-                    ? { ...row, ...수정값 }
-                    : row
-                )
-              );
-            }}
+            indexes={sortedData.map((_, idx) => idx)} // [0, 1, 2, ...]
+            initialIndex={drawerIndex}
+            sortedData={sortedData}
           />
         )}
       </BaseContainer>
