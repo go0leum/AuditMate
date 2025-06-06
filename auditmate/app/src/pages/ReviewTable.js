@@ -2,7 +2,6 @@ import { useContext, useState } from 'react';
 import styled from 'styled-components';
 
 import { TableContext } from '../context/TableContext';
-import { FileContext } from '../context/FileContext';
 
 import TopBar from '../components/layout/TopBar';
 import SideBar from '../components/layout/SideBar';
@@ -14,29 +13,8 @@ import TableDrawer from '../components/layout/TableDrawer';
 import Button from '../components/common/Button';
 import RowExpand from '../components/common/RowExpand';
 import { RuleContext } from '../context/RuleContext';
-
-const RowContainer = styled.div`
-  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
-  align-items: center;
-  padding: 20px 20px;
-  display: inline-flex;
-  justify-content: space-between;
-  position: relative;
-`;
-
-const RowItem = styled.div`
-  width: ${({ width }) => width}px;
-  text-align: center;
-  justify-content: center;
-  display: flex;
-  flex-direction: column;
-  color: #292D32;
-  font-size: 12px;
-  font-family: 'NanumGothic', sans-serif;
-  font-weight: 600;
-  word-wrap: break-word;
-  position: relative;
-`;
+import RowContainer from '../components/layout/RowContainer';
+import RowItem from '../components/common/RowItem';
 
 const Line = styled.div`
   width: ${({ $width }) => $width || 'calc(100% - 60px)'};
@@ -63,8 +41,9 @@ const ReviewTable = () => {
   };
 
   const handleDrawerClose = () => {
+    // TableDrawer 내부에서 먼저 저장됨
     setTableDrawerOpen(false);
-    fetchExcelData(); // 예시: tableData 새로고침
+    fetchExcelData(); // 서버에서 새로고침
   };
 
   const options = [

@@ -48,7 +48,7 @@ const chunkArray = (arr, size) =>
     arr.slice(i * size, i * size + size)
   );
 
-const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
+const ReviewContent = ({ value = {}, onChange, onBlur, selectedDocument }) => {
   const [localContent, setLocalContent] = useState(value);
   const { selectedDocumentRule } = useContext(RuleContext);
 
@@ -56,6 +56,7 @@ const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
     setLocalContent(value);
   }, [value]);
 
+  // 필드별로 변경
   const handleFieldChange = (doc, label, fieldValue) => {
     const updated = {
       ...localContent,
@@ -68,10 +69,15 @@ const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
     onChange && onChange(updated);
   };
 
-  // 방어 코드 추가
-  if (!selectedDocumentRule) {
-    return null; // 또는 로딩 메시지/빈 UI 등
-  }
+  // 필드별 onBlur에서 해당 필드만 저장
+  const handleFieldBlur = (doc, label) => {
+    if (onBlur) {
+      // 해당 필드만 반영된 localContent를 넘김
+      onBlur({ ...localContent });
+    }
+  };
+
+  if (!selectedDocumentRule) return null;
 
   const fields = selectedDocumentRule["서류별기입항목"][selectedDocument] || [];
 
@@ -90,6 +96,7 @@ const ReviewContent = ({ value = {}, onChange, selectedDocument }) => {
               label={label}
               value={localContent[selectedDocument]?.[label] || ''}
               onChange={e => handleFieldChange(selectedDocument, label, e.target.value)}
+              onBlur={() => handleFieldBlur(selectedDocument, label)}
             />
           ))}
         </Row>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import styled from 'styled-components';
 
 // Styled components
@@ -39,17 +39,20 @@ const StyledInput = styled.input`
   }
 `;
 
-const InputField = ({ label, value, onChange, width, height }) => (
+const InputField = forwardRef(({ label, value, onChange, width, height, onBlur, onKeyDown }, ref) => (
   <InputWrapper>
     <Label>{label}</Label>
     <StyledInput
+      ref={ref}
       value={value}
       onChange={onChange}
       placeholder="입력해주세요"
       $width={width}
       $height={height}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
     />
   </InputWrapper>
-);
+));
 
 export default InputField;

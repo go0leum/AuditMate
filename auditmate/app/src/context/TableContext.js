@@ -124,6 +124,36 @@ const TableProvider = ({ children }) => {
     );
   }, [setTableData]);
 
+  const handleReviewContentSave = useCallback((selectedIndex, newContent) => {
+    setTableData(prev =>
+      prev.map((r, idx) =>
+        idx === selectedIndex
+          ? { ...r, 검토내용: newContent }
+          : r
+      )
+    );
+  }, [setTableData]);
+
+  const handleMemoChange = useCallback((selectedIndex, value) => {
+    setTableData(prev =>
+      prev.map((r, idx) =>
+        idx === selectedIndex
+          ? { ...r, 메모: value }
+          : r
+      )
+    );
+  }, [setTableData]);
+
+  const handleNoteChange = useCallback((selectedIndex, value) => {
+    setTableData(prev =>
+      prev.map((r, idx) =>
+        idx === selectedIndex
+          ? { ...r, 보완사항: value }
+          : r
+      )
+    );
+  }, [setTableData]);
+
   // reviewTable 진입 시 규칙이 모두 준비되면 항상 서버에서 데이터 fetch
   useEffect(() => {
     if (
@@ -164,6 +194,9 @@ const TableProvider = ({ children }) => {
         setTableData,
         fetchExcelData,
         ruleLoading,
+        handleReviewContentSave,
+        handleMemoChange,
+        handleNoteChange,
       }}
     >
       {children}

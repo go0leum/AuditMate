@@ -11,34 +11,16 @@ import Table from "./Table";
 import { DrawerContext } from "../../context/DrawerContext";
 import { TableContext } from "../../context/TableContext";
 import { RuleContext } from "../../context/RuleContext";
+
 import UsageBar from "../common/UsageBar";
+import RowContainer from "./RowContainer";
+import RowItem from "../common/RowItem";
 
 const Overlay = styled.div`
   display: ${({ open }) => (open ? 'block' : 'none')};
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.2);
-`;
-
-const RowContainer = styled.div`
-  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
-  align-items: stretch;
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-`;
-
-const RowItem = styled.div`
-  width: ${({ width }) => width}px;
-  text-align: center;
-  justify-content: center;
-  display: flex;
-  flex-direction: column;
-  color: #292D32;
-  font-size: 12px;
-  font-family: 'NanumGothic', sans-serif;
-  font-weight: 600;
-  word-wrap: break-word;
 `;
 
 const Container = styled.div`
@@ -80,10 +62,10 @@ const Section = styled.div`
   justify-content: flex-start;
   gap: 50px;
   align-self: stretch;
-  height: 91px;
+  height: auto;     // 추가: 내부 컴포넌트 높이에 맞게 자동 조절
 `;
 
-const HeaderSection = styled.div`
+const BottonSection = styled.div`
   display: flex;
   justify-content: flex-end;
   flex-direction: row;
@@ -92,8 +74,8 @@ const HeaderSection = styled.div`
 `;
 
 const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose, sortedData }) => {
-  const { sideRef, setMemo, setNote } = useContext(DrawerContext);
-  const { selectedXlsxFile, handleTagSelect, tableData, setTableData } = useContext(TableContext);
+  const { sideRef } = useContext(DrawerContext);
+  const { selectedXlsxFile, handleTagSelect, tableData, handleReviewContentSave, handleMemoChange, handleNoteChange } = useContext(TableContext);
   const { selectedCategoryRule } = useContext(RuleContext);
 
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
@@ -109,15 +91,33 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
     if (open) setSelectedIndex(initialIndex);
   }, [open, initialIndex]);
 
+  // 검토내용만 바뀔 때는 selectedDocument를 바꾸지 않음
   useEffect(() => {
     const row = getRow();
     setReviewContent(row?.['검토내용'] || {});
-    setSelectedDocument(row?.['검토내용'] ? Object.keys(row['검토내용'])[0] : '');
   }, [tableData, selectedIndex]);
 
+  // selectedIndex(행 이동)될 때만 selectedDocument를 첫 번째로 초기화
+  useEffect(() => {
+    const row = getRow();
+    setSelectedDocument(row?.['검토내용'] ? Object.keys(row['검토내용'])[0] : '');
+  }, [selectedIndex]);
+
+  // Drawer 닫힐 때 reviewContent 저장
+  const prevOpen = useRef(open);
+  useEffect(() => {
+    if (prevOpen.current && !open) {
+      handleReviewContentSave(selectedIndex, reviewContent);
+    }
+    prevOpen.current = open;
+    // eslint-disable-next-line
+  }, [open]);
+
+  // Before/Next 이동 시 reviewContent 저장 후 인덱스 변경
   const handlePrev = () => {
     const currentPos = indexes.indexOf(selectedIndex);
     if (currentPos > 0) {
+      handleReviewContentSave(selectedIndex, reviewContent); // 이동 전 저장
       setSelectedIndex(indexes[currentPos - 1]);
     }
   };
@@ -125,41 +125,9 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
   const handleNext = () => {
     const currentPos = indexes.indexOf(selectedIndex);
     if (currentPos < indexes.length - 1) {
+      handleReviewContentSave(selectedIndex, reviewContent); // 이동 전 저장
       setSelectedIndex(indexes[currentPos + 1]);
     }
-  };
-
-  const handleReviewContentSave = (newContent) => {
-    setReviewContent(newContent);
-    setTableData(prev =>
-      prev.map((r, idx) =>
-        idx === selectedIndex
-          ? { ...r, 검토내용: newContent }
-          : r
-      )
-    );
-  };
-
-  const handleMemoChange = (e) => {
-    setMemo(e.target.value);
-    setTableData(prev =>
-      prev.map((r, idx) =>
-        idx === selectedIndex
-          ? { ...r, 메모: e.target.value }
-          : r
-      )
-    );
-  };
-
-  const handleNoteChange = (e) => {
-    setNote(e.target.value);
-    setTableData(prev =>
-      prev.map((r, idx) =>
-        idx === selectedIndex
-          ? { ...r, 보완사항: e.target.value }
-          : r
-      )
-    );
   };
 
   const TableDrawerRef = useRef();
@@ -194,13 +162,6 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
       <Container style={{ pointerEvents: open ? "auto" : "none" }}>
         <SidebarWrapper ref={sideRef} $isOpen={open} $width={width}>
           <Content>
-            <HeaderSection>
-              <div style={{ width: '500px', padding: '0 20px' }}>
-                <UsageBar progress={selectedXlsxFile?.progress} width={500}/>
-              </div>
-              <Button onClick={handlePrev}>Before</Button>
-              <Button onClick={handleNext} secondary>Next</Button>
-            </HeaderSection>
             <Table columns={columns} width="100%">
               <RowContainer $width="100%">
                 {row && columns.map((column, index) => {
@@ -243,7 +204,8 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
                 />
                 <ReviewContent
                   value={reviewContent}
-                  onChange={handleReviewContentSave}
+                  onChange={setReviewContent}
+                  onBlur={updated => handleReviewContentSave(selectedIndex, updated)}
                   selectedDocument={selectedDocument}
                 />
                 <Section>
@@ -251,17 +213,24 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
                     label="메모"
                     placeholder="메모를 입력해주세요"
                     value={row['메모'] ?? ''}
-                    onChange={handleMemoChange}
+                    onChange={e => handleMemoChange(selectedIndex, e.target.value)}
                   />
                   <MemoInput
                     label="보완사항"
                     placeholder="보완사항을 입력해주세요"
                     value={row['보완사항'] ?? ''}
-                    onChange={handleNoteChange}
+                    onChange={e => handleNoteChange(selectedIndex, e.target.value)}
                   />
                 </Section>
               </>
             )}
+            <BottonSection>
+              <div style={{ width: '500px', padding: '0 20px' }}>
+                <UsageBar progress={selectedXlsxFile?.progress} width={500}/>
+              </div>
+              <Button onClick={handlePrev}>Before</Button>
+              <Button onClick={handleNext} secondary>Next</Button>
+            </BottonSection>
           </Content>
         </SidebarWrapper>
       </Container>

@@ -12,42 +12,12 @@ import SideBar from '../components/layout/SideBar';
 import BaseContainer from '../components/layout/BaseContainer';
 import Table from '../components/layout/Table';
 import UploadFileModal from '../components/layout/UploadFileModal';
+import RowContainer from '../components/layout/RowContainer';
 
+import RowItem from '../components/common/RowItem';
 import TagDropdown from '../components/common/TagDropdown';
 import Button from '../components/common/Button';
 import UsageBar from '../components/common/UsageBar';
-
-const RowContainer = styled.div`
-  width: calc(100% - 60px);
-  justify-content: flex-start;
-  align-items: center;
-  padding : 20px 20px;
-  display: inline-flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const RowItem = styled.div`
-  width: ${({ width }) => width}px;
-  text-align: center;
-  justify-content: center;
-  display: flex;
-  flex-direction: column;
-  color: #292D32;
-  font-size: 12px;
-  font-family: 'NanumGothic', sans-serif;
-  font-weight: 600;
-  word-wrap: break-word;
-
-  ${({ $clickable }) =>
-    $clickable &&
-    `
-    &:hover {
-      text-decoration: underline;
-      cursor: pointer;
-    }
-  `}
-`;
 
 const RecentFile = () => {
   const { fileData, ruleData, handleCheckboxChange, handleCheckExport, selectedFiles } = useContext(FileContext);
