@@ -16,7 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from .views import list_files, list_rules, download_file, upload_files, read_xlsx, save_xlsx
+from .views import (
+    list_files, list_rules, download_file, upload_files, read_xlsx, save_xlsx, download_rule_zip,
+    category_rule, document_rule  # 추가
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,5 +29,7 @@ urlpatterns = [
     path('api/upload/', upload_files, name='upload_files'), 
     path('api/read-xlsx/', read_xlsx, name='read_xlsx'),
     path('api/save-xlsx/', save_xlsx, name='save_xlsx'),
-
+    path('api/download_rule/<str:folder_name>/', download_rule_zip, name='download_rule_zip'),
+    path('api/category-rule/', category_rule, name='category_rule'),      # 추가
+    path('api/document-rule/', document_rule, name='document_rule'),      # 추가
 ]

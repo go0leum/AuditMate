@@ -1,59 +1,31 @@
-import { useContext, useState } from 'react';
-import styled from 'styled-components';
+import { useContext, useState } from "react";
 
-import { FileContext } from '../context/FileContext';
-import { RuleContext } from '../context/RuleContext';
+import { FileContext } from "../context/FileContext";
 
-import TopBar from '../components/layout/TopBar';
-import SideBar from '../components/layout/SideBar';
-import BaseContainer from '../components/layout/BaseContainer';
-import Table from '../components/layout/Table';
-import UploadRuleModal from '../components/layout/UploadRuleModal';
-import Button from '../components/common/Button';
+import TopBar from "../components/layout/TopBar";
+import SideBar from "../components/layout/SideBar";
+import BaseContainer from "../components/layout/BaseContainer";
+import Table from "../components/layout/Table";
+import UploadRuleModal from "../components/layout/UploadRuleModal";
+import RowContainer from "../components/layout/RowContainer";
 
-const RowContainer = styled.div`
-  width: calc(100% - 60px);
-  justify-content: flex-start;
-  align-items: center;
-  padding : 20px 20px;
-  display: inline-flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const RowItem = styled.div`
-  width: ${({ width }) => width}px;
-  text-align: center;
-  justify-content: center;
-  display: flex;
-  flex-direction: column;
-  color: #292D32;
-  font-size: 12px;
-  font-family: 'NanumGothic', sans-serif;
-  font-weight: 600;
-  word-wrap: break-word;
-
-  ${({ $clickable }) =>
-    $clickable &&
-    `
-    &:hover {
-      text-decoration: underline;
-      cursor: pointer;
-    }
-  `}
-`;
+import RowItem from "../components/common/RowItem";
+import Button from "../components/common/Button";
+import RuleDrawer from "../components/layout/RuleDrawer"; // RuleDrawer import
 
 const RuleList = () => {
   const { ruleData, handleCheckboxChange, handleCheckExport, selectedRules } = useContext(FileContext);
-  const { handleSetRule } = useContext(RuleContext);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortValue, setSortValue] = useState('date-dsc'); 
+  const [sortValue, setSortValue] = useState('date-dsc');
+  const [ruleDrawerOpen, setRuleDrawerOpen] = useState(false);
+  const [drawerIndex, setDrawerIndex] = useState(0);
 
   const columns = [
     { label: '선택', width: 100 },
-    { label: '검토 규칙', width: 500 },
-    { label: '업로드 날짜', width: 500 },
+    { label: '검토 규칙 이름', width: 250 },
+    { label: '업로드 날짜', width: 250 },
   ];
 
   const options = [
@@ -62,7 +34,7 @@ const RuleList = () => {
     { label: '파일이름 오름차순', value: 'name-asc' },
     { label: '파일이름 내림차순', value: 'name-dsc' },
   ];
-  
+
   const getSortedData = (data, sortKey) => {
     const sorted = [...data];
     switch (sortKey) {
@@ -89,13 +61,24 @@ const RuleList = () => {
 
   const sortedData = getSortedData(filteredData, sortValue);
 
+  // RuleDrawer 열기
+  const openRuleDrawer = (rule) => {
+    const idx = sortedData.findIndex(r => r.folderName === rule.folderName);
+    setDrawerIndex(idx);
+    setRuleDrawerOpen(true);
+  };
+
+  // RuleDrawer 닫기
+  const handleDrawerClose = () => {
+    setRuleDrawerOpen(false);
+  };
+
   return (
     <BaseContainer direction="row">
       <SideBar/>
       <BaseContainer direction="column">
         <TopBar Title='Recent Files' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <Button onClick={() => handleSetRule(selectedRules[0])}>Set Rule</Button>
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
           <UploadRuleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
           <Button onClick={() => handleCheckExport("rule")} secondary>Export</Button>
@@ -111,14 +94,31 @@ const RuleList = () => {
                     onChange={() => handleCheckboxChange("rule", rule)}
                   />
                 </RowItem>
-                <RowItem width={500} >{rule.folderName}</RowItem>
-                <RowItem width={500}>{rule.uploadTime}</RowItem>
+                <RowItem
+                  width={250}
+                  $clickable
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => openRuleDrawer(rule)} // 클릭 시 Drawer 오픈
+                >
+                  {rule.folderName}
+                </RowItem>
+                <RowItem width={250}>{rule.uploadTime}</RowItem>
               </RowContainer>
             ))
           ) : (
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
           )}
         </Table>
+        {sortedData.length > 0 && (
+          <RuleDrawer 
+            open={ruleDrawerOpen} 
+            onClose={handleDrawerClose} 
+            width={750}
+            indexes={sortedData.map((_, idx) => idx)}
+            initialIndex={drawerIndex}
+            sortedData={sortedData}
+          />
+        )}
       </BaseContainer>
     </BaseContainer>
   );

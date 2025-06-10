@@ -8,6 +8,7 @@ from django.http import JsonResponse, FileResponse, Http404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import FileSystemStorage
+import io
 
 UPLOAD_DIR = os.path.join(settings.BASE_DIR, "Upload_file")
 RULE_DIR = os.path.join(settings.BASE_DIR, "Rule_file")
@@ -72,6 +73,7 @@ def list_files(request):
                 "documentDir": sub_folder,
                 "lastModified": metadata_info["lastModified"],
                 "progress": progress,  # 계산된 진행도 반영
+                "ruleName": metadata_info["ruleName"],
             })
 
     return JsonResponse(result, safe=False)
@@ -119,7 +121,20 @@ def download_file(request, folder_name, file_name):
     if not os.path.exists(file_path):
         raise Http404("File not found")
 
-    return FileResponse(open(file_path, "rb"), as_attachment=True, filename=file_name)
+    if os.path.isdir(file_path):
+        # 디렉토리라면 zip으로 압축해서 반환
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for root, _, files in os.walk(file_path):
+                for f in files:
+                    abs_path = os.path.join(root, f)
+                    rel_path = os.path.relpath(abs_path, file_path)
+                    zip_file.write(abs_path, arcname=rel_path)
+        zip_buffer.seek(0)
+        zip_filename = f"{file_name}.zip"
+        return FileResponse(zip_buffer, as_attachment=True, filename=zip_filename)
+    else:
+        return FileResponse(open(file_path, "rb"), as_attachment=True, filename=file_name)
 
 @csrf_exempt
 def upload_files(request):
@@ -135,6 +150,7 @@ def upload_files(request):
             "documentDir": [],
             "lastModified": upload_time,
             "progress": 0,
+            "ruleName": None,
         }
 
         fs = FileSystemStorage(location=upload_dir)
@@ -181,6 +197,15 @@ def upload_files(request):
                 metadata["lastModified"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             except Exception as e:
                 print(f"Excel 진행도 계산 오류: {e}")
+        
+        # Rule_file에서 첫번째 폴더 이름 가져오기
+        rule_name = None
+        if os.path.exists(RULE_DIR):
+            rule_folders = [f for f in os.listdir(RULE_DIR) if os.path.isdir(os.path.join(RULE_DIR, f))]
+            if rule_folders:
+                rule_name = rule_folders[0]
+        
+        metadata["ruleName"] = rule_name
 
         # metadata.json 생성
         with open(os.path.join(upload_dir, "metadata.json"), "w", encoding="utf-8") as f:
@@ -189,7 +214,6 @@ def upload_files(request):
         return JsonResponse({"message": "파일 업로드 성공", "metadata": metadata})
 
     return JsonResponse({"error": "잘못된 요청"}, status=400)
-
 
 
 @csrf_exempt
@@ -319,7 +343,8 @@ def save_xlsx(request):
 def upload_rules(request):
     if request.method == "POST":
         upload_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        rule_dir = os.path.join(RULE_DIR, upload_time)
+        rule_name = request.POST.get("rule_name")
+        rule_dir = os.path.join(RULE_DIR, rule_name)
         os.makedirs(rule_dir, exist_ok=True)
 
         metadata = {
@@ -333,7 +358,6 @@ def upload_rules(request):
         fs = FileSystemStorage(location=rule_dir)
 
         # 규칙 이름
-        rule_name = request.POST.get("rule_name")
         if rule_name:
             metadata["ruleName"] = rule_name
             metadata["folderName"] = rule_name
@@ -357,3 +381,46 @@ def upload_rules(request):
         return JsonResponse({"message": "규칙 업로드 성공", "metadata": metadata})
 
     return JsonResponse({"error": "잘못된 요청"}, status=400)
+
+def download_rule_zip(request, folder_name):
+    folder_path = os.path.join(RULE_DIR, folder_name)
+    if not os.path.isdir(folder_path):
+        raise Http404("Rule folder not found")
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for root, _, files in os.walk(folder_path):
+            for f in files:
+                abs_path = os.path.join(root, f)
+                rel_path = os.path.relpath(abs_path, folder_path)
+                zip_file.write(abs_path, arcname=rel_path)
+    zip_buffer.seek(0)
+    zip_filename = f"{folder_name}.zip"
+    return FileResponse(zip_buffer, as_attachment=True, filename=zip_filename)
+
+def category_rule(request):
+    # Rule_file 폴더에서 첫 번째 폴더의 category_rule.json을 반환
+    import os, json
+    RULE_DIR = os.path.join(settings.BASE_DIR, "Rule_file")
+    for folder_name in os.listdir(RULE_DIR):
+        folder_path = os.path.join(RULE_DIR, folder_name)
+        if os.path.isdir(folder_path):
+            category_rule_path = os.path.join(folder_path, "category_rule.json")
+            if os.path.exists(category_rule_path):
+                with open(category_rule_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                return JsonResponse(data, safe=False)
+    return JsonResponse({}, safe=False)
+
+def document_rule(request):
+    # Rule_file 폴더에서 첫 번째 폴더의 document_rule.json을 반환
+    import os, json
+    RULE_DIR = os.path.join(settings.BASE_DIR, "Rule_file")
+    for folder_name in os.listdir(RULE_DIR):
+        folder_path = os.path.join(RULE_DIR, folder_name)
+        if os.path.isdir(folder_path):
+            document_rule_path = os.path.join(folder_path, "document_rule.json")
+            if os.path.exists(document_rule_path):
+                with open(document_rule_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                return JsonResponse(data, safe=False)
+    return JsonResponse({}, safe=False)
