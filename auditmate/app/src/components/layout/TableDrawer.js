@@ -84,24 +84,21 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
     tableData[initialIndex]?.['검토내용'] ? Object.keys(tableData[initialIndex]['검토내용'])[0] : ''
   );
 
-  // currentRow를 사용하지 않고 tableData[selectedIndex]로 직접 접근
-  const getRow = () => tableData[selectedIndex];
-
   useEffect(() => {
     if (open) setSelectedIndex(initialIndex);
   }, [open, initialIndex]);
 
   // 검토내용만 바뀔 때는 selectedDocument를 바꾸지 않음
   useEffect(() => {
-    const row = getRow();
+    const row = tableData[selectedIndex];
     setReviewContent(row?.['검토내용'] || {});
   }, [tableData, selectedIndex]);
 
   // selectedIndex(행 이동)될 때만 selectedDocument를 첫 번째로 초기화
   useEffect(() => {
-    const row = getRow();
+    const row = tableData[selectedIndex];
     setSelectedDocument(row?.['검토내용'] ? Object.keys(row['검토내용'])[0] : '');
-  }, [selectedIndex]);
+  }, [selectedIndex, tableData]);
 
   // Drawer 닫힐 때 reviewContent 저장
   const prevOpen = useRef(open);

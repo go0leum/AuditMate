@@ -209,6 +209,14 @@ const ReviewTable = () => {
                             )}
                           </RowItem>
                         );
+                      } else if (column.label === '메모' || column.label === '보완사항') {
+                        return (
+                          <RowItem key={colIndex} width={column.width}>
+                            {(value && typeof value === 'string')
+                              ? (value.length > 20 ? value.slice(0, 20) + '…' : value)
+                              : (value ?? '-')}
+                          </RowItem>
+                        );
                       } else {
                         return (
                           <RowItem key={colIndex} width={column.width}>
