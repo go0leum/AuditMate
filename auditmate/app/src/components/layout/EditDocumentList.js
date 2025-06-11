@@ -77,11 +77,18 @@ const EditDocumentList = ({
   const handleInputConfirm = (phase) => {
     const v = inputValue[phase]?.trim();
     if (v) {
-      // 🔥 prev => ... 형태가 아니라, 반드시 새 객체를 직접 전달해야 상위 상태와 동기화됩니다!
-      onRuleChange({
-        ...ruleData,
-        [phase]: [...ruleData[phase], v],
-      });
+      // 기존 배열에 새 값 추가
+      const newArr = Array.isArray(ruleData[phase])
+        ? [...ruleData[phase], v]
+        : [v];
+      // 상위에서 onRuleChange={newDocs => ...}로 넘겨줬으므로, phase별 새 배열만 넘김
+      onRuleChange(
+        {
+          ...ruleData,
+          [phase]: newArr
+        },
+        phase
+      );
     }
     setInputActive(prev => ({ ...prev, [phase]: false }));
     setInputValue(prev => ({ ...prev, [phase]: "" }));
@@ -92,10 +99,14 @@ const EditDocumentList = ({
     const newArr = Array.isArray(ruleData[phase])
       ? ruleData[phase].filter((_, i) => i !== idx)
       : [];
-    onRuleChange({
-      ...ruleData,
-      [phase]: newArr,
-    });
+    // 전체 객체를 넘김
+    onRuleChange(
+      {
+        ...ruleData,
+        [phase]: newArr
+      },
+      phase
+    );
   };
 
   return (  
@@ -104,7 +115,7 @@ const EditDocumentList = ({
         <SubTitle>{title}</SubTitle>
       )}
       {Object.entries(ruleData).map(([phase, items]) => {
-        const docs = items;
+        const docs = Array.isArray(items) ? items : []; // <-- 추가
         const groups = chunkArray(docs, 3);
         const needExtraRow = groups.length === 0 || groups[groups.length - 1].length === 3;
         if (needExtraRow) groups.push([]);
@@ -117,14 +128,13 @@ const EditDocumentList = ({
                 <Row key={`${phase}-${rowIdx}`}>
                   {rowIdx === 0 && <Label>{phase}</Label>}
                   {rowIdx > 0 && <Label />}
-                  {itemGroup.map((item, idx) => (
+                  {Array.isArray(itemGroup) ? itemGroup.map((item, idx) => (
                     <EditButton
                       key={item}
                       width={150}
                       $active={selectedDocName === item}
                       icon="-"
                       iconColor="black"
-                      // 클릭 비활성화: disableSelect가 true면 onClick 없음
                       onClick={
                         disableSelect
                           ? undefined
@@ -137,13 +147,13 @@ const EditDocumentList = ({
                     >
                       <ButtonText $active={selectedDocName === item}>{item}</ButtonText>
                     </EditButton>
-                  ))}
+                  )) : null}
                   {/* 마지막 row의 첫 번째 칸에 +버튼 또는 input, 나머지는 빈칸 */}
                   {isLastRow &&
                     Array.from({ length: 3 - itemGroup.length }).map((_, emptyIdx) =>
                       emptyIdx === 0 ? (
                         inputActive[phase] ? (
-                          <EditButton width={150} $active={true} key="input">
+                          <EditButton width={150} $active={false} key="input">
                             <input
                               autoFocus
                               style={{
@@ -166,7 +176,7 @@ const EditDocumentList = ({
                         ) : (
                           <EditButton
                             width={150}
-                            $active={true}
+                            $active={false} // +버튼은 항상 비활성화로
                             $plus={true} // ⭐️ 추가: +버튼만 기존 스타일 유지
                             icon="+"
                             iconColor="#0647A9"

@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 
 import { FileContext } from "../context/FileContext";
+import { RuleContext } from "../context/RuleContext"; // 추가
 
 import TopBar from "../components/layout/TopBar";
 import SideBar from "../components/layout/SideBar";
@@ -15,12 +16,12 @@ import RuleDrawer from "../components/layout/RuleDrawer"; // RuleDrawer import
 
 const RuleList = () => {
   const { ruleData, handleCheckboxChange, handleCheckExport, selectedRules } = useContext(FileContext);
+  const { setEditRule } = useContext(RuleContext); // FileContext → RuleContext로 변경
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortValue, setSortValue] = useState('date-dsc');
   const [ruleDrawerOpen, setRuleDrawerOpen] = useState(false);
-  const [drawerIndex, setDrawerIndex] = useState(0);
 
   const columns = [
     { label: '선택', width: 100 },
@@ -63,9 +64,8 @@ const RuleList = () => {
 
   // RuleDrawer 열기
   const openRuleDrawer = (rule) => {
-    const idx = sortedData.findIndex(r => r.folderName === rule.folderName);
-    setDrawerIndex(idx);
     setRuleDrawerOpen(true);
+    setEditRule(rule);
   };
 
   // RuleDrawer 닫기
@@ -114,9 +114,6 @@ const RuleList = () => {
             open={ruleDrawerOpen} 
             onClose={handleDrawerClose} 
             width={750}
-            indexes={sortedData.map((_, idx) => idx)}
-            initialIndex={drawerIndex}
-            sortedData={sortedData}
           />
         )}
       </BaseContainer>

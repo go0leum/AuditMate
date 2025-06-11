@@ -1,119 +1,147 @@
-import React, { createContext, useState, useCallback, useEffect, useRef } from 'react';
+import { FileContext } from './FileContext'; // 추가
+import React, { createContext, useState, useCallback, useEffect, useContext } from 'react';
 import axios from 'axios';
 
 // Context 생성
 export const RuleContext = createContext();
 
 const RuleProvider = ({ children }) => {
+  const [editRule, setEditRule] = useState(() => {
+    // 앱 시작 시 localStorage에서 복원
+    const saved = localStorage.getItem('editRule');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [selectedDocumentRule, setSelectedDocumentRule] = useState(null);
   const [selectedCategoryRule, setSelectedCategoryRule] = useState(null);
-  const [ruleLoading, setRuleLoading] = useState(true);
-  const [pendingCategoryRule, setPendingCategoryRule] = useState(null);
-  const [pendingDocumentRule, setPendingDocumentRule] = useState(null);
-  const saveTimeout = useRef(null);
+  const { setRuleData } = useContext(FileContext); 
 
-  // 규칙 초기화
+  const handleEditButton = useCallback(
+    (type, editRule) => (newValue, key) => {
+      setEditRule(prev => {
+        if (!prev) return prev;
+        if (type === "category") {
+          return {
+            ...prev,
+            categoryRule: {
+              ...prev.categoryRule,
+              ...newValue,
+            }
+          };
+        } else if (type === "phase") {
+          // newValue: 해당 세목의 배열, key: 세목명
+          return {
+            ...prev,
+            documentRule: {
+              ...prev.documentRule,
+              세목별서류: {
+                ...prev.documentRule.세목별서류,
+                [key]: newValue,
+              },
+              ...Object.fromEntries(
+                Object.entries(prev.documentRule).filter(([k]) => k !== "세목별서류")
+              ),
+            }
+          };
+        } else if (type === "proof") {
+          return {
+            ...prev,
+            documentRule: {
+              ...prev.documentRule,
+              증빙구분별서류: {
+                ...prev.documentRule.증빙구분별서류,
+                ...newValue,
+              },
+              ...Object.fromEntries(
+                Object.entries(prev.documentRule).filter(([k]) => k !== "증빙구분별서류")
+              ),
+            }
+          };
+        } else if (type === "fields") {
+          return {
+            ...prev,
+            documentRule: {
+              ...prev.documentRule,
+              서류별기입항목: {
+                ...prev.documentRule.서류별기입항목,
+                ...newValue,
+              },
+              ...Object.fromEntries(
+                Object.entries(prev.documentRule).filter(([k]) => k !== "서류별기입항목")
+              ),
+            }
+          };
+        }
+        return prev;
+      });
+    },
+    []
+  );
+
+  const saveRule = useCallback(async (rule) => {
+    if (!rule) return;
+    try {
+      await axios.post("http://localhost:8000/api/save_rule/", rule);
+    } catch (e) {
+      console.error("규칙 저장 실패", e);
+    }
+  }, []);
+
+  // editRule이 바뀔 때마다 localStorage에 저장
+  useEffect(() => {
+    if (editRule) {
+      localStorage.setItem('editRule', JSON.stringify(editRule));
+    }
+  }, [editRule]);
+
+  // editRule이 바뀔 때마다 0.1초 후 서버 저장
+  useEffect(() => {
+    if (!editRule) return;
+    const timer = setTimeout(() => {
+      saveRule(editRule);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [editRule, saveRule]);
+
+  // editRule이 바뀔 때마다 ruleData도 갱신
+  useEffect(() => {
+    if (!editRule || !editRule.folderName || !setRuleData) return;
+    setRuleData(prev => {
+      if (!Array.isArray(prev)) return prev;
+      const idx = prev.findIndex(rule => rule.folderName === editRule.folderName);
+      if (idx === -1) return prev;
+      // 값이 실제로 달라질 때만 갱신
+      if (JSON.stringify(prev[idx]) === JSON.stringify(editRule)) return prev;
+      return prev.map(rule =>
+        rule.folderName === editRule.folderName ? { ...rule, ...editRule } : rule
+      );
+    });
+  }, [editRule, setRuleData]);
+
   const resetRules = useCallback(() => {
+    setEditRule(null);
     setSelectedDocumentRule(null);
     setSelectedCategoryRule(null);
+    localStorage.removeItem('editRule');
   }, []);
 
-  // rule 객체를 받아서 각각의 상태로 분리 저장
-  const handleSetRule = useCallback(
-    (rule) => {
-      if (rule?.documentRule && rule?.categoryRule) {
-        setSelectedDocumentRule(rule.documentRule);
-        setSelectedCategoryRule(rule.categoryRule);
-      } else {
-        resetRules();
-      }
-    },
-    [resetRules]
-  );
-
-  // ruleName(폴더명)과 ruleData를 받아서 rule 정보를 찾아 상태 업데이트
-  const handleRuleSelect = useCallback(
-    (ruleName, ruleData) => {
-      const selectedRule = ruleData.find((r) => r.folderName === ruleName);
-      if (selectedRule) {
-        setSelectedDocumentRule(selectedRule.documentRule);
-        setSelectedCategoryRule(selectedRule.categoryRule);
-      } else {
-        resetRules();
-      }
-    },
-    [resetRules]
-  );
-
-  // 🔥 새로고침(마운트)마다 규칙 fetch
-  useEffect(() => {
-    setRuleLoading(true);
-    axios
-      .all([
-        axios.get('http://localhost:8000/api/category-rule/'),
-        axios.get('http://localhost:8000/api/document-rule/'),
-      ])
-      .then(([categoryRes, documentRes]) => {
-        setSelectedCategoryRule(categoryRes.data);
-        setSelectedDocumentRule(documentRes.data);
-        setRuleLoading(false);
-      })
-      .catch(() => {
-        resetRules();
-        setRuleLoading(false);
-      });
-  }, [resetRules]);
-
-  // 규칙 저장 함수 (categoryRule, documentRule을 각각 저장)
-  const saveRules = async (categoryRule, documentRule) => {
-    try {
-      await axios.post('http://localhost:8000/api/category-rule/', categoryRule);
-      await axios.post('http://localhost:8000/api/document-rule/', documentRule);
-      // 저장 후 최신 데이터 fetch (옵션)
-      const [categoryRes, documentRes] = await Promise.all([
-        axios.get('http://localhost:8000/api/category-rule/'),
-        axios.get('http://localhost:8000/api/document-rule/')
-      ]);
-      setSelectedCategoryRule(categoryRes.data);
-      setSelectedDocumentRule(documentRes.data);
-      return true;
-    } catch (e) {
-      // 에러 처리 필요시 추가
-      return false;
-    }
-  };
-
-  // debounce 저장 함수
-  const debounceSaveRules = useCallback((categoryRule, documentRule) => {
-    setPendingCategoryRule(categoryRule);
-    setPendingDocumentRule(documentRule);
+  const handleSetRule = useCallback((rule) => {
+    setEditRule(rule);
+    setSelectedDocumentRule(rule?.documentRule || null);
+    setSelectedCategoryRule(rule?.categoryRule || null);
   }, []);
-
-  useEffect(() => {
-    if (pendingCategoryRule || pendingDocumentRule) {
-      if (saveTimeout.current) clearTimeout(saveTimeout.current);
-      saveTimeout.current = setTimeout(() => {
-        saveRules(pendingCategoryRule, pendingDocumentRule);
-        setPendingCategoryRule(null);
-        setPendingDocumentRule(null);
-      }, 500);
-      return () => clearTimeout(saveTimeout.current);
-    }
-  }, [pendingCategoryRule, pendingDocumentRule]);
 
   return (
     <RuleContext.Provider
       value={{
+        editRule,
+        setEditRule,
         selectedDocumentRule,
         setSelectedDocumentRule,
         selectedCategoryRule,
         setSelectedCategoryRule,
-        ruleLoading, 
-        handleSetRule,
-        handleRuleSelect,
+        handleEditButton, 
         resetRules,
-        saveRules, // 즉시 저장
-        debounceSaveRules, // 0.5초 후 저장
+        handleSetRule,
       }}
     >
       {children}

@@ -1,7 +1,6 @@
-import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
+import styled from 'styled-components';
 
-// 스타일 정의
 const ButtonStyled = styled.button`
   width: 46px;
   height: 46px;

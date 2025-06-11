@@ -214,6 +214,7 @@ const FileProvider = ({ children }) => {
         setDocumentRule,
         setCategoryRule,
         setRuleName,
+        setRuleData, // 추가!
         handleUpload,
         fetchFileData,
       }}

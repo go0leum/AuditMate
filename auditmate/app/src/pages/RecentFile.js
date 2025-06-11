@@ -1,9 +1,7 @@
-import { useContext, useState, useEffect } from 'react';
-import styled from 'styled-components';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { FileContext } from '../context/FileContext';
-import { RuleContext } from '../context/RuleContext';
 import { TableContext } from '../context/TableContext';
 import { DocumentContext } from '../context/DocumentContext';
 
@@ -21,13 +19,11 @@ import UsageBar from '../components/common/UsageBar';
 
 const RecentFile = () => {
   const { fileData, ruleData, handleCheckboxChange, handleCheckExport, selectedFiles } = useContext(FileContext);
-  const { handleSetRule } = useContext(RuleContext);
   const { setSelectedXlsxFile } = useContext(TableContext);
-  const { setSelectedDocumentDir }= useContext(DocumentContext);
+  const { setSelectedDocumentDir } = useContext(DocumentContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortValue, setSortValue] = useState('date-asc'); // 추가
-  
+  const [sortValue, setSortValue] = useState('date-asc');
   const navigate = useNavigate();
 
   const columns = [
@@ -36,7 +32,7 @@ const RecentFile = () => {
     { label: '검토 자료', width: 200 },
     { label: '검토 규칙', width: 105 },
     { label: '수정한 시간', width: 150 },
-    { label: '진행도', width: 300},
+    { label: '진행도', width: 300 },
   ];
 
   const options = [
@@ -47,7 +43,7 @@ const RecentFile = () => {
     { label: '진행도 오름차순', value: 'progress-asc' },
     { label: '진행도 내림차순', value: 'progress-desc' },
   ];
-  
+
   const getSortedData = (data, sortKey) => {
     const sorted = [...data];
     switch (sortKey) {
@@ -78,19 +74,7 @@ const RecentFile = () => {
 
   const sortedData = getSortedData(filteredData, sortValue);
 
-  // ruleData가 [{folderName: 'A', ...}, {folderName: 'B', ...}] 형태라면
   const ruleNameOptions = ruleData.map(rule => rule.folderName);
-
-  // 기본값 자동 설정 (최초 렌더링 또는 fileData/ruleData 변경 시)
-  useEffect(() => {
-    if (fileData.length > 0 && ruleData.length > 0) {
-      const firstRuleName = fileData[0].ruleName;
-      const selectedRule = ruleData.find(r => r.folderName === firstRuleName);
-      if (selectedRule) {
-        handleSetRule(selectedRule);
-      }
-    }
-  }, [fileData, ruleData, handleSetRule]);
 
   return (
     <BaseContainer direction="row">
@@ -125,7 +109,6 @@ const RecentFile = () => {
                     <TagDropdown
                       options={ruleNameOptions}
                       value={file.ruleName}
-                      onSelect={(ruleName) => handleSetRule(ruleName, ruleData)}
                     />
                   </div>
                 </RowItem>
