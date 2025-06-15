@@ -1,2 +1,84 @@
 # AuditMate
-AuditMate is an intelligent assistant designed to support and streamline the financial audit process.
+
+**AuditMate**는 회계 업무 중 반복적이고 규칙 기반(rule-based) 작업을 자동화하기 위한 도구입니다.
+회계사 선배님의 실무 경험에서 비롯된 실제 니즈를 바탕으로 설계되었으며,
+기업의 회계 서류를 분석하고, 미흡 내역을 정리해 전달하는 업무 프로세스를 지원합니다.
+
+## 🧾 프로젝트 개요
+
+회계사의 실제 업무 흐름 중 반복적이고 수작업으로 진행되던 작업을 자동화하여 업무 효율성을 높이고자 시작된 프로젝트입니다.
+AuditMate는 다음과 같은 프로세스를 중심으로 설계되었습니다:
+
+1. **외부 회계 지침서 파악**
+2. **의뢰 기업의 내역 확인**
+3. **의뢰 기업의 관련 서류 확인**
+4. **서류 내 미흡 내역 정리**
+5. **미흡 내역 의뢰 기업에 전달**
+
+이 중 **2\~4단계**는 규칙 기반으로 자동화 가능한 반복 작업으로 분석되었고, 이를 중심으로 기능을 개발하고 있습니다.
+
+## 🎯 주요 기능
+
+* 회계 관련 서류 업로드 및 파싱
+* 규칙 기반(rule-based) 내역 검토 자동화
+* 미흡 사항 자동 분류 및 요약
+* 미흡 내역 리포트 생성 및 내보내기 (PDF, Markdown 등)
+* 사용자 정의 규칙(rule) 추가/수정 기능 (예정)
+
+## 💡 프로젝트 배경
+
+정보처리기사 자격증을 준비하며 배운 **요구사항 분석 기법**을 실제 프로젝트에 적용해본 첫 경험입니다.
+의뢰인의 아이디어를 구체화하며, 실제 사용자와의 커뮤니케이션을 통해 프로그램 설계를 진행했습니다.
+
+## 🛠️ 기술 스택
+
+> ※ 구체적인 기술 스택은 프로젝트 구현 상황에 맞게 업데이트해 주세요.
+
+* Backend: Python, Django (또는 FastAPI)
+* Frontend: React (또는 다른 웹 UI 프레임워크)
+* Document Parsing: CLOVA OCR, Pandas, Regex
+* Data Storage: PostgreSQL
+* Report Export: ReportLab / WeasyPrint / Markdown
+
+## 📁 프로젝트 구조 (예시)
+
+```
+auditmate/
+├── backend/
+│   ├── api/
+│   └── rules/
+├── app/
+│   └── components/
+├── docs/
+├── tests/
+└── README.md
+```
+
+## 📌 향후 계획
+
+* 사용자 맞춤 규칙 기반 검토 기능 강화
+* Web UI 개선 및 배포
+* 다양한 회계 서류 포맷 지원 확대
+
+## 📷 요구사항 분석 노트
+
+<div align="center">
+  <img src="assets/first_request1.jpg" alt="요구사항 노트 1" width="45%" style="border-radius: 12px; margin: 10px;">
+  <img src="assets/first_request2.jpg" alt="요구사항 노트 2" width="45%" style="border-radius: 12px; margin: 10px;">
+  <p><i>초기 미팅에서 작성한 요구사항 기록 노트</i></p>
+</div>
+
+## 🤝 기여자
+
+* **\[@go0leum]** - 기획, 요구사항 분석, 개발
+
+---
+
+필요시 다음 내용을 추가할 수 있습니다:
+
+* 설치 및 실행 방법
+* API 명세 링크
+* 회계 규정 문서 레퍼런스
+* 예시 보고서 스크린샷
+
+---
