@@ -125,9 +125,6 @@ const RuleDrawer = ({open = false, width = 750, onClose}) => {
     ? { [selectedDocName]: documentRule["서류별기입항목"][selectedDocName] || [] }
     : {};
 
-  console.log("documentRule:", documentRule);
-  console.log("categoryRule:", categoryRule);
-
   return (
     <>
       <Overlay open={open} onClick={onClose} />

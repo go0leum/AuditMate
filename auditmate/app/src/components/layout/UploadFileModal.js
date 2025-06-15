@@ -76,9 +76,16 @@ const UploadFileModal = ({ isOpen, onClose }) => {
   const excelInputRef = useRef();
   const folderInputRef = useRef();
 
+  // 모달 닫기 + 파일 리셋
+  const handleClose = () => {
+    setExcelFile(null);
+    setAttachmentFolder(null);
+    if (onClose) onClose();
+  };
+
   const handleUploadAndClose = () => {
     handleUpload("file");
-    onClose(); // 업로드 후 모달 닫기
+    handleClose(); // 업로드 후 모달 닫기
   };
 
   return (
@@ -105,7 +112,7 @@ const UploadFileModal = ({ isOpen, onClose }) => {
             </div>
           </InputContainer>
           <InputContainer>
-            <Label>검토 자료 폴더</Label>
+            <Label>검토 자료 zip 파일</Label>
             <div style={{ flexDirection: "row", display: "flex", alignItems: "center", gap: "10px" }}>
               <input
                 type="file"
@@ -118,12 +125,12 @@ const UploadFileModal = ({ isOpen, onClose }) => {
                 Upload
               </Button>
               <DisplayBox className={attachmentFolder ? "" : "placeholder"}>
-                {attachmentFolder? attachmentFolder.name : "파일을 선택하세요"}
+                {attachmentFolder? attachmentFolder[0].name : "파일을 선택하세요"}
               </DisplayBox>
             </div>
           </InputContainer>
           <ButtonGroup>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={handleClose}>Cancel</Button>
             <Button onClick={handleUploadAndClose} secondary>
               Upload
             </Button>
