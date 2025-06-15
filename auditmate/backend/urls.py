@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from .views import (
     list_files, list_rules, download_file, upload_files, read_xlsx, save_xlsx, download_rule_zip,
-    save_rule
+    save_rule, update_rule_name
 )
 
 urlpatterns = [
@@ -31,4 +31,5 @@ urlpatterns = [
     path('api/save-xlsx/', save_xlsx, name='save_xlsx'),
     path('api/download_rule/<str:folder_name>/', download_rule_zip, name='download_rule_zip'),
     path('api/save_rule/', save_rule, name='save_rule'),
+    path('api/update_rule_name/', update_rule_name, name='update_rule_name'),
 ]

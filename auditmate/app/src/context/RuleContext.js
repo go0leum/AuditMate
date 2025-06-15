@@ -1,4 +1,4 @@
-import { FileContext } from './FileContext'; // 추가
+import { FileContext } from './FileContext';
 import React, { createContext, useState, useCallback, useEffect, useContext } from 'react';
 import axios from 'axios';
 
@@ -6,14 +6,12 @@ import axios from 'axios';
 export const RuleContext = createContext();
 
 const RuleProvider = ({ children }) => {
-  const [editRule, setEditRule] = useState(() => {
-    // 앱 시작 시 localStorage에서 복원
-    const saved = localStorage.getItem('editRule');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // localStorage에서 복원하지 않고, 무조건 null로 시작
+  const [editRule, setEditRule] = useState(null);
   const [selectedDocumentRule, setSelectedDocumentRule] = useState(null);
   const [selectedCategoryRule, setSelectedCategoryRule] = useState(null);
   const { setRuleData } = useContext(FileContext); 
+  const [skipNextSave, setSkipNextSave] = useState(false);
 
   const handleEditButton = useCallback(
     (type, editRule) => (newValue, key) => {
@@ -28,7 +26,6 @@ const RuleProvider = ({ children }) => {
             }
           };
         } else if (type === "phase") {
-          // newValue: 해당 세목의 배열, key: 세목명
           return {
             ...prev,
             documentRule: {
@@ -86,30 +83,31 @@ const RuleProvider = ({ children }) => {
     }
   }, []);
 
-  // editRule이 바뀔 때마다 localStorage에 저장
-  useEffect(() => {
-    if (editRule) {
-      localStorage.setItem('editRule', JSON.stringify(editRule));
-    }
-  }, [editRule]);
+  // localStorage 저장 useEffect 제거
+  // useEffect(() => {
+  //   if (editRule) {
+  //     localStorage.setItem('editRule', JSON.stringify(editRule));
+  //   }
+  // }, [editRule]);
 
-  // editRule이 바뀔 때마다 0.1초 후 서버 저장
   useEffect(() => {
     if (!editRule) return;
+    if (skipNextSave) {
+      setSkipNextSave(false);
+      return;
+    }
     const timer = setTimeout(() => {
       saveRule(editRule);
     }, 100);
     return () => clearTimeout(timer);
-  }, [editRule, saveRule]);
+  }, [editRule, saveRule, skipNextSave]);
 
-  // editRule이 바뀔 때마다 ruleData도 갱신
   useEffect(() => {
     if (!editRule || !editRule.folderName || !setRuleData) return;
     setRuleData(prev => {
       if (!Array.isArray(prev)) return prev;
       const idx = prev.findIndex(rule => rule.folderName === editRule.folderName);
       if (idx === -1) return prev;
-      // 값이 실제로 달라질 때만 갱신
       if (JSON.stringify(prev[idx]) === JSON.stringify(editRule)) return prev;
       return prev.map(rule =>
         rule.folderName === editRule.folderName ? { ...rule, ...editRule } : rule
@@ -121,10 +119,17 @@ const RuleProvider = ({ children }) => {
     setEditRule(null);
     setSelectedDocumentRule(null);
     setSelectedCategoryRule(null);
-    localStorage.removeItem('editRule');
+    // localStorage.removeItem('editRule'); // 삭제
   }, []);
 
   const handleSetRule = useCallback((rule) => {
+    setEditRule(rule);
+    setSelectedDocumentRule(rule?.documentRule || null);
+    setSelectedCategoryRule(rule?.categoryRule || null);
+  }, []);
+
+  const handleSetRuleFromFetch = useCallback((rule) => {
+    setSkipNextSave(true);
     setEditRule(rule);
     setSelectedDocumentRule(rule?.documentRule || null);
     setSelectedCategoryRule(rule?.categoryRule || null);
@@ -142,6 +147,7 @@ const RuleProvider = ({ children }) => {
         handleEditButton, 
         resetRules,
         handleSetRule,
+        handleSetRuleFromFetch,
       }}
     >
       {children}

@@ -204,6 +204,10 @@ def upload_files(request):
             rule_folders = [f for f in os.listdir(RULE_DIR) if os.path.isdir(os.path.join(RULE_DIR, f))]
             if rule_folders:
                 rule_name = rule_folders[0]
+            else:
+                rule_name = None  # 폴더가 없으면 None
+        else:
+            rule_name = None  # Rule_file 폴더가 없으면 None
         
         metadata["ruleName"] = rule_name
 
@@ -462,6 +466,37 @@ def save_rule(request):
                 json.dump(metadata, f, ensure_ascii=False, indent=4)
 
             return JsonResponse({"status": "success", "message": "규칙이 저장되었습니다."})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
+
+@csrf_exempt
+def update_rule_name(request):
+    """
+    파일의 metadata.json에서 ruleName만 변경하는 함수
+    """
+    if request.method == "POST":
+        try:
+            body = json.loads(request.body)
+            folder_name = body.get("folderName")
+            rule_name = body.get("ruleName")
+
+            if not folder_name or rule_name is None:
+                return JsonResponse({"status": "error", "message": "folderName과 ruleName이 필요합니다."}, status=400)
+
+            metadata_path = os.path.join(UPLOAD_DIR, folder_name, "metadata.json")
+            if not os.path.exists(metadata_path):
+                return JsonResponse({"status": "error", "message": "metadata.json이 존재하지 않습니다."}, status=404)
+
+            with open(metadata_path, "r", encoding="utf-8") as f:
+                metadata = json.load(f)
+
+            metadata["ruleName"] = rule_name
+
+            with open(metadata_path, "w", encoding="utf-8") as f:
+                json.dump(metadata, f, ensure_ascii=False, indent=4)
+
+            return JsonResponse({"status": "success", "message": "ruleName이 성공적으로 변경되었습니다."})
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)

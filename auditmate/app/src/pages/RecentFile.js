@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FileContext } from '../context/FileContext';
 import { TableContext } from '../context/TableContext';
 import { DocumentContext } from '../context/DocumentContext';
+import { RuleContext } from '../context/RuleContext';
 
 import TopBar from '../components/layout/TopBar';
 import SideBar from '../components/layout/SideBar';
@@ -18,9 +19,10 @@ import Button from '../components/common/Button';
 import UsageBar from '../components/common/UsageBar';
 
 const RecentFile = () => {
-  const { fileData, ruleData, handleCheckboxChange, handleCheckExport, selectedFiles } = useContext(FileContext);
+  const { fileData, ruleData, handleCheckboxChange, handleCheckExport, selectedFiles, handleRuleNameChange } = useContext(FileContext);
   const { setSelectedXlsxFile } = useContext(TableContext);
   const { setSelectedDocumentDir } = useContext(DocumentContext);
+  const { setSelectedCategoryRule, setSelectedDocumentRule } = useContext(RuleContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortValue, setSortValue] = useState('date-asc');
@@ -97,7 +99,15 @@ const RecentFile = () => {
                   $clickable style={{ cursor: 'pointer' }} 
                   onClick={() => {
                     setSelectedXlsxFile(file);
-                    navigate(`/reviewTable/${file.xlsxFile}`);}}>{file.xlsxFile}</RowItem>
+                    // 파일의 ruleName에 맞는 규칙 찾기
+                    const rule = ruleData.find(r => r.folderName === file.ruleName);
+                    setSelectedCategoryRule(rule?.categoryRule || null);
+                    setSelectedDocumentRule(rule?.documentRule || null);
+                    navigate(`/reviewTable/${file.xlsxFile}`);
+                  }}
+                >
+                  {file.xlsxFile}
+                </RowItem>
                 <RowItem width={200} 
                   $clickable 
                   style={{ cursor: 'pointer' }} 
@@ -109,6 +119,7 @@ const RecentFile = () => {
                     <TagDropdown
                       options={ruleNameOptions}
                       value={file.ruleName}
+                      onSelect={(newRuleName) => handleRuleNameChange(file, newRuleName)}
                     />
                   </div>
                 </RowItem>

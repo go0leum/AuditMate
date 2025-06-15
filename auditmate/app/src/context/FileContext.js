@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useLocation } from 'react-router-dom'; // 추가
 
@@ -34,6 +34,29 @@ const FileProvider = ({ children }) => {
       console.error("잘못된 타입입니다:", type);
     }
   };
+
+  const handleRuleNameChange = useCallback(async (file, newRuleName) => {
+    setFileData(prev =>
+      prev.map(f =>
+        f.folderName === file.folderName
+          ? { ...f, ruleName: newRuleName }
+          : f
+      )
+    );
+    // 서버 metadata.json의 ruleName도 변경
+    try {
+      await fetch('http://localhost:8000/api/update_rule_name/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folderName: file.folderName,
+          ruleName: newRuleName,
+        }),
+      });
+    } catch (error) {
+      console.error('ruleName 서버 업데이트 실패:', error);
+    }
+  }, [setFileData]);
 
   // 파일 다운로드 함수 분리
   const downloadFiles = async (targets) => {
@@ -214,9 +237,10 @@ const FileProvider = ({ children }) => {
         setDocumentRule,
         setCategoryRule,
         setRuleName,
-        setRuleData, // 추가!
+        setRuleData,
         handleUpload,
         fetchFileData,
+        handleRuleNameChange,
       }}
     >
       {children}

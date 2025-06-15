@@ -86,13 +86,18 @@ const RuleDrawer = ({open = false, width = 750, onClose}) => {
   const categoryRule = useMemo(() => editRule?.categoryRule || {}, [editRule]);
   const documentRule = useMemo(() => editRule?.documentRule || {}, [editRule]);
 
-  const [selectedCategory, setSelectedCategory] = useState(
-    Object.keys(categoryRule["세목별서류"] || {})[0] || ""
-  );
-  const [selectedProof, setSelectedProof] = useState(
-    Object.keys(documentRule["증빙구분별서류"] || {})[0] || ""
-  );
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedProof, setSelectedProof] = useState("");
   const [selectedDocName, setSelectedDocName] = useState(null);
+
+  // Drawer가 닫힐 때 선택값 초기화
+  useEffect(() => {
+    if (!open) {
+      setSelectedCategory("");
+      setSelectedProof("");
+      setSelectedDocName(null);
+    }
+  }, [open]);
 
   const columns = [
     { label: '증빙구분', width: 105 },
@@ -110,23 +115,6 @@ const RuleDrawer = ({open = false, width = 750, onClose}) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, onClose, sideRef]);
 
-  // 증빙구분/세목이 바뀌면 드롭다운 값도 동기화
-  useEffect(() => {
-    const firstCategory = Object.keys(categoryRule["세목별서류"] || {})[0] || "";
-    if (selectedCategory !== firstCategory) {
-      setSelectedCategory(firstCategory);
-    }
-    // eslint-disable-next-line
-  }, [categoryRule]);
-
-  useEffect(() => {
-    const firstProof = Object.keys(documentRule["증빙구분별서류"] || {})[0] || "";
-    if (selectedProof !== firstProof) {
-      setSelectedProof(firstProof);
-    }
-    // eslint-disable-next-line
-  }, [documentRule]);
-
   // 세목별 서류
   const phaseDocs = documentRule["세목별서류"]?.[selectedCategory] || [];
   // 증빙구분별 서류
@@ -136,6 +124,9 @@ const RuleDrawer = ({open = false, width = 750, onClose}) => {
   const docFields = selectedDocName && documentRule["서류별기입항목"]
     ? { [selectedDocName]: documentRule["서류별기입항목"][selectedDocName] || [] }
     : {};
+
+  console.log("documentRule:", documentRule);
+  console.log("categoryRule:", categoryRule);
 
   return (
     <>
@@ -149,13 +140,66 @@ const RuleDrawer = ({open = false, width = 750, onClose}) => {
                 <EditDocumentList
                   ruleData={categoryRule}
                   onRuleChange={(newCategoryRule) => {
-                    setEditRule(prev => ({
-                      ...prev,
-                      categoryRule: {
-                        ...prev.categoryRule,
-                        ...newCategoryRule
+                    setEditRule(prev => {
+                      let newDocumentRule = { ...prev.documentRule };
+
+                      // 세목명 동기화
+                      if (newCategoryRule["세목명"]) {
+                        const oldKeys = prev.categoryRule["세목명"] || [];
+                        const newKeys = newCategoryRule["세목명"];
+                        const added = newKeys.filter(k => !oldKeys.includes(k));
+                        const removed = oldKeys.filter(k => !newKeys.includes(k));
+                        // 추가
+                        added.forEach(k => {
+                          if (!(k in newDocumentRule["세목별서류"])) {
+                            newDocumentRule["세목별서류"] = {
+                              ...newDocumentRule["세목별서류"],
+                              [k]: { 사전승인: [], 수행과정: [], 수행확인: [] }
+                            };
+                          }
+                        });
+                        // 삭제
+                        removed.forEach(k => {
+                          if (newDocumentRule["세목별서류"]) {
+                            const { [k]: _, ...rest } = newDocumentRule["세목별서류"];
+                            newDocumentRule["세목별서류"] = rest;
+                          }
+                        });
                       }
-                    }));
+
+                      // 증빙구분 동기화
+                      if (newCategoryRule["증빙구분"]) {
+                        const oldKeys = prev.categoryRule["증빙구분"] || [];
+                        const newKeys = newCategoryRule["증빙구분"];
+                        const added = newKeys.filter(k => !oldKeys.includes(k));
+                        const removed = oldKeys.filter(k => !newKeys.includes(k));
+                        // 추가
+                        added.forEach(k => {
+                          if (!(k in newDocumentRule["증빙구분별서류"])) {
+                            newDocumentRule["증빙구분별서류"] = {
+                              ...newDocumentRule["증빙구분별서류"],
+                              [k]: { 판매사실입증: [], 실지급입증: [], 보완보조서류: [] }
+                            };
+                          }
+                        });
+                        // 삭제
+                        removed.forEach(k => {
+                          if (newDocumentRule["증빙구분별서류"]) {
+                            const { [k]: _, ...rest } = newDocumentRule["증빙구분별서류"];
+                            newDocumentRule["증빙구분별서류"] = rest;
+                          }
+                        });
+                      }
+
+                      return {
+                        ...prev,
+                        categoryRule: {
+                          ...prev.categoryRule,
+                          ...newCategoryRule
+                        },
+                        documentRule: newDocumentRule
+                      };
+                    });
                   }}
                   disableSelect={true}
                 />
@@ -167,14 +211,14 @@ const RuleDrawer = ({open = false, width = 750, onClose}) => {
                 <RowContainer $width="250px">
                   <RowItem $width={105}>
                     <TagDropdown
-                      options={Object.keys(documentRule["증빙구분별서류"] || {})}
+                      options={categoryRule["증빙구분"] || []}
                       value={selectedProof}
                       onSelect={setSelectedProof}
                     />
                   </RowItem>
                   <RowItem width={105}>
                     <TagDropdown
-                      options={Object.keys(documentRule["세목별서류"] || {})}
+                      options={categoryRule["세목명"] || []}
                       value={selectedCategory}
                       onSelect={setSelectedCategory}
                     />
@@ -183,41 +227,105 @@ const RuleDrawer = ({open = false, width = 750, onClose}) => {
               </Table>
               <Section>
                 <EditDocumentList
-                  title="세목별 서류"
-                  ruleData={phaseDocs}
+                  title="증빙구분별 서류"
+                  ruleData={proofDocs}
                   setSelectedDocName={setSelectedDocName}
                   selectedDocName={selectedDocName}
-                  onRuleChange={(newArr, phase) => {
-                    setEditRule(prev => ({
-                      ...prev,
-                      documentRule: {
-                        ...prev.documentRule,
-                        세목별서류: {
-                          ...prev.documentRule.세목별서류,
-                          [phase]: newArr,
-                        }
-                      }
-                    }));
+                  onRuleChange={(newProofObj) => {
+                    setEditRule(prev => {
+                      let newDocumentRule = { ...prev.documentRule };
+                      const prevDocs = prev.documentRule["증빙구분별서류"]?.[selectedProof] || {};
+                      const newDocs = newProofObj || {};
+
+                      // 문서 종류(판매사실입증, 실지급입증, 보완보조서류)
+                      ["판매사실입증", "실지급입증", "보완보조서류"].forEach(category => {
+                        const prevArr = prevDocs[category] || [];
+                        const newArr = newDocs[category] || [];
+
+                        // 삭제된 문서명
+                        const removedDocs = prevArr.filter(doc => !newArr.includes(doc));
+                        removedDocs.forEach(docName => {
+                          if (newDocumentRule["서류별기입항목"]) {
+                            const { [docName]: _, ...rest } = newDocumentRule["서류별기입항목"];
+                            newDocumentRule["서류별기입항목"] = rest;
+                          }
+                        });
+
+                        // 추가된 문서명
+                        const addedDocs = newArr.filter(doc => !prevArr.includes(doc));
+                        addedDocs.forEach(docName => {
+                          if (newDocumentRule["서류별기입항목"] && !(docName in newDocumentRule["서류별기입항목"])) {
+                            newDocumentRule["서류별기입항목"] = {
+                              ...newDocumentRule["서류별기입항목"],
+                              [docName]: [] // 기본값(필요시 원하는 구조로)
+                            };
+                          }
+                        });
+                      });
+
+                      // 증빙구분별서류 갱신
+                      newDocumentRule["증빙구분별서류"] = {
+                        ...newDocumentRule["증빙구분별서류"],
+                        [selectedProof]: newProofObj
+                      };
+
+                      return {
+                        ...prev,
+                        documentRule: newDocumentRule
+                      };
+                    });
                   }}
                 />
               </Section>
               <Section>
                 <EditDocumentList
-                  title="증빙구분별 서류"
-                  ruleData={proofDocs}
+                  title="세목별 서류"
+                  ruleData={phaseDocs}
                   setSelectedDocName={setSelectedDocName}
                   selectedDocName={selectedDocName}
-                  onRuleChange={(newArr, proof) => {
-                    setEditRule(prev => ({
-                      ...prev,
-                      documentRule: {
-                        ...prev.documentRule,
-                        증빙구분별서류: {
-                          ...prev.documentRule.증빙구분별서류,
-                          [proof]: newArr,
-                        }
-                      }
-                    }));
+                  onRuleChange={(newObj, phase) => {
+                    setEditRule(prev => {
+                      let newDocumentRule = { ...prev.documentRule };
+                      const prevDocs = prev.documentRule["세목별서류"]?.[selectedCategory] || {};
+                      const newDocs = newObj || {};
+
+                      // 문서 종류(사전승인, 수행과정, 수행확인)
+                      ["사전승인", "수행과정", "수행확인"].forEach(category => {
+                        const prevArr = prevDocs[category] || [];
+                        const newArr = newDocs[category] || [];
+
+                        // 삭제된 문서명
+                        const removedDocs = prevArr.filter(doc => !newArr.includes(doc));
+                        removedDocs.forEach(docName => {
+                          if (newDocumentRule["서류별기입항목"]) {
+                            const { [docName]: _, ...rest } = newDocumentRule["서류별기입항목"];
+                            newDocumentRule["서류별기입항목"] = rest;
+                          }
+                        });
+
+                        // 추가된 문서명
+                        const addedDocs = newArr.filter(doc => !prevArr.includes(doc));
+                        addedDocs.forEach(docName => {
+                          if (newDocumentRule["서류별기입항목"] && !(docName in newDocumentRule["서류별기입항목"])) {
+                            newDocumentRule["서류별기입항목"] = {
+                              ...newDocumentRule["서류별기입항목"],
+                              [docName]: [] // 기본값(필요시 원하는 구조로)
+                            };
+                          }
+                        });
+                      });
+
+                      // 세목별서류 갱신
+                      newDocumentRule["세목별서류"] = {
+                        ...prev.documentRule["세목별서류"],
+                        [selectedCategory]: newObj
+                      };
+
+                      return {
+                        ...prev,
+                        documentRule: newDocumentRule
+                      };
+                    });
                   }}
                 />
               </Section>
@@ -226,6 +334,7 @@ const RuleDrawer = ({open = false, width = 750, onClose}) => {
                   title={selectedDocName ? `"${selectedDocName}" 기입항목` : "서류별 기입항목"}
                   ruleData={docFields}
                   onRuleChange={(newArr, docName) => {
+                    // docFields는 {문서명: [항목, ...]} 형태
                     setEditRule(prev => ({
                       ...prev,
                       documentRule: {

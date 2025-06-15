@@ -1,7 +1,4 @@
-import { useContext } from 'react';
 import styled from 'styled-components';
-
-import { RuleContext } from '../../context/RuleContext';
 
 const TagWrapper = styled.div`
   padding: 2px 8px;

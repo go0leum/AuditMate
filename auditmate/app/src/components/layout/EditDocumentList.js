@@ -74,14 +74,55 @@ const EditDocumentList = ({
   };
 
   // input에서 엔터/포커스아웃 시 추가
-  const handleInputConfirm = (phase) => {
-    const v = inputValue[phase]?.trim();
-    if (v) {
-      // 기존 배열에 새 값 추가
-      const newArr = Array.isArray(ruleData[phase])
-        ? [...ruleData[phase], v]
-        : [v];
-      // 상위에서 onRuleChange={newDocs => ...}로 넘겨줬으므로, phase별 새 배열만 넘김
+  const handleInputConfirm = (docName) => {
+    const value = inputValue[docName]?.trim();
+    if (value) {
+      const items = Array.isArray(ruleData) ? ruleData : ruleData[docName] || [];
+      const newArr = [...items, value];
+
+      // 증빙구분/세목명(배열)일 때
+      if (Array.isArray(ruleData)) {
+        onRuleChange(newArr, docName);
+      }
+      // "서류별기입항목" 구조일 때
+      else if (
+        title && (
+          title.includes("기입항목") ||
+          Object.keys(ruleData).length === 1
+        )
+      ) {
+        onRuleChange(newArr, docName);
+      } else {
+        // 증빙구분별/세목별 서류는 proofType(phase) 전체 객체를 넘김
+        onRuleChange(
+          {
+            ...ruleData,
+            [docName]: newArr
+          },
+          docName
+        );
+      }
+    }
+    setInputActive(prev => ({ ...prev, [docName]: false }));
+    setInputValue(prev => ({ ...prev, [docName]: "" }));
+  };
+
+  // 항목 삭제
+  const handleRemove = (phase, idx) => {
+    const items = Array.isArray(ruleData[phase]) ? ruleData[phase] : [];
+    const newArr = items.filter((_, i) => i !== idx);
+
+    // "서류별기입항목" 구조일 때는 phase가 문서명임
+    if (
+      title && (
+        title.includes("기입항목") || // "기입항목"이 제목에 포함되어 있으면
+        Object.keys(ruleData).length === 1 // 단일 문서만 있을 때도
+      )
+    ) {
+      // 기입항목만 배열로 넘김
+      onRuleChange(newArr, phase);
+    } else {
+      // 증빙구분별/세목별 서류는 객체 전체를 넘김
       onRuleChange(
         {
           ...ruleData,
@@ -90,23 +131,6 @@ const EditDocumentList = ({
         phase
       );
     }
-    setInputActive(prev => ({ ...prev, [phase]: false }));
-    setInputValue(prev => ({ ...prev, [phase]: "" }));
-  };
-
-  // 항목 삭제
-  const handleRemove = (phase, idx) => {
-    const newArr = Array.isArray(ruleData[phase])
-      ? ruleData[phase].filter((_, i) => i !== idx)
-      : [];
-    // 전체 객체를 넘김
-    onRuleChange(
-      {
-        ...ruleData,
-        [phase]: newArr
-      },
-      phase
-    );
   };
 
   return (  
@@ -128,26 +152,30 @@ const EditDocumentList = ({
                 <Row key={`${phase}-${rowIdx}`}>
                   {rowIdx === 0 && <Label>{phase}</Label>}
                   {rowIdx > 0 && <Label />}
-                  {Array.isArray(itemGroup) ? itemGroup.map((item, idx) => (
-                    <EditButton
-                      key={item}
-                      width={150}
-                      $active={selectedDocName === item}
-                      icon="-"
-                      iconColor="black"
-                      onClick={
-                        disableSelect
-                          ? undefined
-                          : () =>
-                              setSelectedDocName &&
-                              setSelectedDocName(selectedDocName === item ? "" : item)
-                      }
-                      onIconClick={() => handleRemove(phase, rowIdx * 3 + idx)}
-                      style={disableSelect ? { pointerEvents: "auto" } : {}}
-                    >
-                      <ButtonText $active={selectedDocName === item}>{item}</ButtonText>
-                    </EditButton>
-                  )) : null}
+                  {Array.isArray(itemGroup) ? itemGroup.map((item, idx) => {
+                    // 실제 배열에서의 인덱스 계산
+                    const realIdx = rowIdx * 3 + idx;
+                    return (
+                      <EditButton
+                        key={item}
+                        width={150}
+                        $active={selectedDocName === item}
+                        icon="-"
+                        iconColor="black"
+                        onClick={
+                          disableSelect
+                            ? undefined
+                            : () =>
+                                setSelectedDocName &&
+                                setSelectedDocName(selectedDocName === item ? "" : item)
+                        }
+                        onIconClick={() => handleRemove(phase, realIdx)}
+                        style={disableSelect ? { pointerEvents: "auto" } : {}}
+                      >
+                        <ButtonText $active={selectedDocName === item}>{item}</ButtonText>
+                      </EditButton>
+                    );
+                  }) : null}
                   {/* 마지막 row의 첫 번째 칸에 +버튼 또는 input, 나머지는 빈칸 */}
                   {isLastRow &&
                     Array.from({ length: 3 - itemGroup.length }).map((_, emptyIdx) =>
