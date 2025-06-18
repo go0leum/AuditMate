@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 import { FileContext } from '../context/FileContext';
 import { TableContext } from '../context/TableContext';
-import { DocumentContext } from '../context/DocumentContext';
 import { RuleContext } from '../context/RuleContext';
 
 import TopBar from '../components/layout/TopBar';
@@ -21,7 +20,6 @@ import UsageBar from '../components/common/UsageBar';
 const RecentFile = () => {
   const { fileData, ruleData, handleCheckboxChange, handleCheckExport, selectedFiles, handleRuleNameChange } = useContext(FileContext);
   const { setSelectedXlsxFile } = useContext(TableContext);
-  const { setSelectedDocumentDir } = useContext(DocumentContext);
   const { setSelectedCategoryRule, setSelectedDocumentRule } = useContext(RuleContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -108,12 +106,7 @@ const RecentFile = () => {
                 >
                   {file.xlsxFile}
                 </RowItem>
-                <RowItem width={200} 
-                  $clickable 
-                  style={{ cursor: 'pointer' }} 
-                  onClick={() => {
-                    setSelectedDocumentDir(file);
-                    navigate(`/documentOCR/${file.documentDir}`);}}>{file.documentDir}</RowItem>
+                <RowItem width={200} >{file.documentDir}</RowItem>
                 <RowItem width={105}>
                   <div onMouseDown={(e) => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                     <TagDropdown

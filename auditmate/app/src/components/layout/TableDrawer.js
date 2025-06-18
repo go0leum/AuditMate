@@ -35,14 +35,15 @@ const SidebarWrapper = styled.div`
   bottom: 0;
   right: 0;
   color: #202020;
-  height: 100%;
   z-index: 99;
   width: ${({ width }) => width}px;
   transform: ${({ $isOpen }) =>
     $isOpen ? 'translateX(0)' : 'translateX(100%)'};
   transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
   will-change: transform;
-  overflow-y: scroll; // ← 추가: 항상 스크롤 표시
+  overflow-y: auto; // 스크롤은 유지
+  height: auto;     // ← 변경
+  min-height: 100vh; // ← 추가
 `;
 
 const Content = styled.div`
@@ -52,7 +53,6 @@ const Content = styled.div`
   width: 100%;
   flex-direction: column;
   gap: 20px;
-  height: 100%;
   box-sizing: border-box;
 `;
 

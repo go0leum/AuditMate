@@ -145,9 +145,6 @@ const ReviewTable = () => {
       <SideBar />
       <BaseContainer direction="column">
         <TopBar Title="Review Table" options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
-        <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <Button onClick={() => handleExport} secondary>Export</Button>
-        </div>
         {data.length === 0 ? (
           <Table columns={columns} width="calc(100% - 60px)">
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
