@@ -206,6 +206,30 @@ const FileProvider = ({ children }) => {
     }
   };
 
+  // 선택한 파일 삭제 핸들러 추가
+  const handleCheckDelete = async () => {
+    if (selectedFiles.length === 0) {
+      alert("삭제할 파일을 선택하세요.");
+      return;
+    }
+    // 삭제 전 확인
+    if (!window.confirm("정말로 선택한 파일을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+      return;
+    }
+    try {
+      for (const file of selectedFiles) {
+        await fetch(`http://localhost:8000/api/delete/${file.folderName}/`, {
+          method: "DELETE",
+        });
+      }
+      fetchFileData();
+      setSelectedFiles([]);
+      alert("선택한 파일이 삭제되었습니다.");
+    } catch (error) {
+      alert("파일 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
   useEffect(() => {
     // 경로가 /recentFile 또는 /ruleList일 때만 실행
     if (
@@ -241,6 +265,7 @@ const FileProvider = ({ children }) => {
         handleUpload,
         fetchFileData,
         handleRuleNameChange,
+        handleCheckDelete, 
       }}
     >
       {children}

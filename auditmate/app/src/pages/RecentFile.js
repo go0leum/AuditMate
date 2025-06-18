@@ -18,7 +18,7 @@ import Button from '../components/common/Button';
 import UsageBar from '../components/common/UsageBar';
 
 const RecentFile = () => {
-  const { fileData, ruleData, handleCheckboxChange, handleCheckExport, selectedFiles, handleRuleNameChange } = useContext(FileContext);
+  const { fileData, ruleData, handleCheckboxChange, handleCheckExport, selectedFiles, handleRuleNameChange, handleCheckDelete } = useContext(FileContext);
   const { setSelectedXlsxFile } = useContext(TableContext);
   const { setSelectedCategoryRule, setSelectedDocumentRule } = useContext(RuleContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,6 +85,7 @@ const RecentFile = () => {
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
           <UploadFileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
           <Button onClick={() => handleCheckExport("file")} secondary>Export</Button>
+          <Button onClick={handleCheckDelete} danger>Delete</Button>
         </div>
         <Table columns={columns}>
           {sortedData.length > 0 ? (

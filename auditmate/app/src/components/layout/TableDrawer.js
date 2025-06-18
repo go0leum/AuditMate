@@ -95,10 +95,11 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
   }, [tableData, selectedIndex]);
 
   // selectedIndex(행 이동)될 때만 selectedDocument를 첫 번째로 초기화
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const row = tableData[selectedIndex];
     setSelectedDocument(row?.['검토내용'] ? Object.keys(row['검토내용'])[0] : '');
-  }, [selectedIndex, tableData]);
+  }, [selectedIndex]);
 
   // Drawer 닫힐 때 reviewContent 저장
   const prevOpen = useRef(open);

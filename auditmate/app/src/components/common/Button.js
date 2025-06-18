@@ -14,13 +14,26 @@ const ButtonStyled = styled.button`
   font-weight: 500;
   line-height: 20px;
   word-wrap: break-word;
-  background: ${({ $secondary }) => ($secondary ? '#CDDAEE' : '#0647A9')}; /* 변경 */
-  color: ${({ $secondary }) => ($secondary ? '#0647A9' : 'white')}; /* 변경 */
+  background: ${({ $danger, $secondary }) =>
+    $danger ? '#E2B6B6' : $secondary ? '#CDDAEE' : '#0647A9'};
+  color: ${({ $danger, $secondary }) =>
+    $danger ? '#A92525' : $secondary ? '#0647A9' : 'white'};
 `;
 
-const Button = ({ children = 'Okay', onClick, secondary = false, ...props }) => {
+const Button = ({
+  children = 'Okay',
+  onClick,
+  secondary = false,
+  danger = false, // 추가
+  ...props
+}) => {
   return (
-    <ButtonStyled onClick={onClick} $secondary={secondary} {...props}>
+    <ButtonStyled
+      onClick={onClick}
+      $secondary={secondary}
+      $danger={danger} // 추가
+      {...props}
+    >
       {children}
     </ButtonStyled>
   );

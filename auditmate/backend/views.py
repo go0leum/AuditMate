@@ -8,6 +8,7 @@ from django.http import JsonResponse, FileResponse, Http404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import FileSystemStorage
+from django.views.decorators.http import require_http_methods
 import io
 
 UPLOAD_DIR = os.path.join(settings.BASE_DIR, "Upload_file")
@@ -500,3 +501,21 @@ def update_rule_name(request):
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
+
+from django.views.decorators.http import require_http_methods
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_file(request, folder_name):
+    """
+    업로드된 파일 폴더(및 내부 파일 전체) 삭제
+    """
+    folder_path = os.path.join(UPLOAD_DIR, folder_name)
+    if not os.path.exists(folder_path):
+        return JsonResponse({"error": "폴더가 존재하지 않습니다."}, status=404)
+    try:
+        import shutil
+        shutil.rmtree(folder_path)
+        return JsonResponse({"status": "success", "message": f"{folder_name} 삭제 완료"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
