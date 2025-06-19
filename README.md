@@ -32,13 +32,8 @@ AuditMate는 다음과 같은 프로세스를 중심으로 설계되었습니다
 
 ## 🛠️ 기술 스택
 
-> ※ 구체적인 기술 스택은 프로젝트 구현 상황에 맞게 업데이트해 주세요.
-
-* Backend: Python, Django (또는 FastAPI)
-* Frontend: React (또는 다른 웹 UI 프레임워크)
-* Document Parsing: CLOVA OCR, Pandas, Regex
-* Data Storage: PostgreSQL
-* Report Export: ReportLab / WeasyPrint / Markdown
+* Backend: Python, Django 
+* Frontend: React 
 
 ## 📁 프로젝트 구조 (예시)
 
@@ -49,8 +44,6 @@ auditmate/
 │   └── rules/
 ├── app/
 │   └── components/
-├── docs/
-├── tests/
 └── README.md
 ```
 
@@ -60,17 +53,11 @@ auditmate/
 * Web UI 개선 및 배포
 * 다양한 회계 서류 포맷 지원 확대
 
-## 📷 요구사항 분석 노트
-
-<div align="center">
-  <img src="assets/first_request1.jpg" alt="요구사항 노트 1" width="45%" style="border-radius: 12px; margin: 10px;">
-  <img src="assets/first_request2.jpg" alt="요구사항 노트 2" width="45%" style="border-radius: 12px; margin: 10px;">
-  <p><i>초기 미팅에서 작성한 요구사항 기록 노트</i></p>
-</div>
 
 ## 🤝 기여자
 
-* **\[@go0leum]** - 기획, 요구사항 분석, 개발
+* [Jun Pyo Yang](https://www.linkedin.com/in/dardnatsyang/) - 기획
+* **\[@go0leum]** - 요구사항 분석, 개발
 
 ---
 
