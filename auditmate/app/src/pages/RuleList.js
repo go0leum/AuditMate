@@ -15,7 +15,7 @@ import Button from "../components/common/Button";
 import RuleDrawer from "../components/layout/RuleDrawer"; // RuleDrawer import
 
 const RuleList = () => {
-  const { ruleData, handleCheckboxChange, handleCheckExport, selectedRules } = useContext(FileContext);
+  const { ruleData, handleCheckboxChange, handleCheckExport, selectedRules, handleCheckDelete } = useContext(FileContext);
   const { setEditRule } = useContext(RuleContext); // FileContext → RuleContext로 변경
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,6 +82,7 @@ const RuleList = () => {
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
           <UploadRuleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
           <Button onClick={() => handleCheckExport("rule")} secondary>Export</Button>
+          <Button onClick={() => handleCheckDelete("rule")} danger>Delete</Button>
         </div>
         <Table columns={columns}>
           {sortedData.length > 0 ? (

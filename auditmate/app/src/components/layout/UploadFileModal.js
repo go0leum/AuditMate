@@ -111,24 +111,6 @@ const UploadFileModal = ({ isOpen, onClose }) => {
               </DisplayBox>
             </div>
           </InputContainer>
-          <InputContainer>
-            <Label>검토 자료 zip 파일</Label>
-            <div style={{ flexDirection: "row", display: "flex", alignItems: "center", gap: "10px" }}>
-              <input
-                type="file"
-                accept=".zip"
-                ref={folderInputRef}
-                style={{ display: "none" }}
-                onChange={(e) => setAttachmentFolder(e.target.files)}
-              />
-              <Button onClick={() => folderInputRef.current.click()}>
-                Upload
-              </Button>
-              <DisplayBox className={attachmentFolder ? "" : "placeholder"}>
-                {attachmentFolder? attachmentFolder[0].name : "파일을 선택하세요"}
-              </DisplayBox>
-            </div>
-          </InputContainer>
           <ButtonGroup>
             <Button onClick={handleClose}>Cancel</Button>
             <Button onClick={handleUploadAndClose} secondary>

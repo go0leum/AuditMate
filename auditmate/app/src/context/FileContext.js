@@ -60,12 +60,15 @@ const FileProvider = ({ children }) => {
 
   // 파일 다운로드 함수 분리
   const downloadFiles = async (targets) => {
+    // 사용자에게 검토내용/메모 포함 여부 확인
+    const includeReview = window.confirm("다운로드 파일에 '검토내용' 및 '메모' 열을 포함하시겠습니까?");
     try {
       await Promise.all(
         targets.map(async (item) => {
           const fileName = item.xlsxFile;
+          // type 파라미터로 포함 여부 전달
           const response = await fetch(
-            `http://localhost:8000/api/download/${item.folderName}/${fileName}/`
+            `http://localhost:8000/api/download/${item.folderName}/${fileName}/?type=${includeReview ? 'full' : 'no_review'}`
           );
           if (!response.ok) throw new Error(`다운로드 실패: ${fileName}`);
 
@@ -207,26 +210,49 @@ const FileProvider = ({ children }) => {
   };
 
   // 선택한 파일 삭제 핸들러 추가
-  const handleCheckDelete = async () => {
-    if (selectedFiles.length === 0) {
-      alert("삭제할 파일을 선택하세요.");
-      return;
-    }
-    // 삭제 전 확인
-    if (!window.confirm("정말로 선택한 파일을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
-      return;
-    }
-    try {
-      for (const file of selectedFiles) {
-        await fetch(`http://localhost:8000/api/delete/${file.folderName}/`, {
-          method: "DELETE",
-        });
+  const handleCheckDelete = async (type) => {
+    if (type === "file") {
+      if (selectedFiles.length === 0) {
+        alert("삭제할 파일을 선택하세요.");
+        return;
       }
-      fetchFileData();
-      setSelectedFiles([]);
-      alert("선택한 파일이 삭제되었습니다.");
-    } catch (error) {
-      alert("파일 삭제 중 오류가 발생했습니다.");
+      if (!window.confirm("정말로 선택한 파일을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+        return;
+      }
+      try {
+        for (const file of selectedFiles) {
+          await fetch(`http://localhost:8000/api/delete_files/${file.xlsxFile}/`, {
+            method: "DELETE",
+          });
+        }
+        fetchFileData();
+        setSelectedFiles([]);
+        alert("선택한 파일이 삭제되었습니다.");
+      } catch (error) {
+        alert("파일 삭제 중 오류가 발생했습니다.");
+      }
+    } else if (type === "rule") {
+      if (selectedRules.length === 0) {
+        alert("삭제할 규칙을 선택하세요.");
+        return;
+      }
+      if (!window.confirm("정말로 선택한 규칙을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+        return;
+      }
+      try {
+        for (const rule of selectedRules) {
+          await fetch(`http://localhost:8000/api/delete_rules/${rule.folderName}/`, {
+            method: "DELETE",
+          });
+        }
+        fetchRuleData();
+        setSelectedRules([]);
+        alert("선택한 규칙이 삭제되었습니다.");
+      } catch (error) {
+        alert("규칙 삭제 중 오류가 발생했습니다.");
+      }
+    } else {
+      alert("잘못된 삭제 타입입니다.");
     }
   };
 

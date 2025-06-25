@@ -122,6 +122,31 @@ def download_file(request, folder_name, file_name):
     if not os.path.exists(file_path):
         raise Http404("File not found")
 
+    # type 파라미터 확인
+    download_type = request.GET.get('type', 'full')
+
+    # xlsx 파일이면 type에 따라 열 제거
+    if file_name.lower().endswith('.xlsx'):
+        try:
+            import tempfile
+            df = pd.read_excel(file_path)
+            if download_type == 'no_review':
+                # '검토내용', '보완사항', '메모' 열 제외
+                cols_to_exclude = ['검토내용', '메모']
+                cols_to_keep = [col for col in df.columns if col not in cols_to_exclude]
+                df_export = df[cols_to_keep]
+            else:
+                df_export = df
+
+            # 임시 파일로 저장
+            with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+                df_export.to_excel(tmp.name, index=False)
+                tmp.seek(0)
+                response = FileResponse(open(tmp.name, "rb"), as_attachment=True, filename=file_name)
+            return response
+        except Exception as e:
+            return JsonResponse({"error": f"엑셀 내보내기 오류: {str(e)}"}, status=500)
+
     if os.path.isdir(file_path):
         # 디렉토리라면 zip으로 압축해서 반환
         zip_buffer = io.BytesIO()
@@ -516,5 +541,21 @@ def delete_file(request, folder_name):
         import shutil
         shutil.rmtree(folder_path)
         return JsonResponse({"status": "success", "message": f"{folder_name} 삭제 완료"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_rule(request, folder_name):
+    """
+    업로드된 규칙 폴더(및 내부 파일 전체) 삭제
+    """
+    rule_folder_path = os.path.join(RULE_DIR, folder_name)
+    if not os.path.exists(rule_folder_path):
+        return JsonResponse({"error": "규칙 폴더가 존재하지 않습니다."}, status=404)
+    try:
+        import shutil
+        shutil.rmtree(rule_folder_path)
+        return JsonResponse({"status": "success", "message": f"{folder_name} 규칙 삭제 완료"})
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)

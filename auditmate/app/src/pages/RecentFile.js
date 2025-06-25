@@ -29,9 +29,8 @@ const RecentFile = () => {
   const columns = [
     { label: '선택', width: 50 },
     { label: '검토 내역', width: 200 },
-    { label: '검토 자료', width: 200 },
-    { label: '검토 규칙', width: 105 },
-    { label: '수정한 시간', width: 150 },
+    { label: '검토 규칙', width: 200 },
+    { label: '수정한 시간', width: 200 },
     { label: '진행도', width: 300 },
   ];
 
@@ -85,7 +84,7 @@ const RecentFile = () => {
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
           <UploadFileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
           <Button onClick={() => handleCheckExport("file")} secondary>Export</Button>
-          <Button onClick={handleCheckDelete} danger>Delete</Button>
+          <Button onClick={() => handleCheckDelete("file")} danger>Delete</Button>
         </div>
         <Table columns={columns}>
           {sortedData.length > 0 ? (
@@ -107,8 +106,7 @@ const RecentFile = () => {
                 >
                   {file.xlsxFile}
                 </RowItem>
-                <RowItem width={200} >{file.documentDir}</RowItem>
-                <RowItem width={105}>
+                <RowItem width={200}>
                   <div onMouseDown={(e) => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                     <TagDropdown
                       options={ruleNameOptions}
@@ -117,7 +115,7 @@ const RecentFile = () => {
                     />
                   </div>
                 </RowItem>
-                <RowItem width={150}>{file.lastModified}</RowItem>
+                <RowItem width={200}>{file.lastModified}</RowItem>
                 <RowItem width={300}>
                   <UsageBar progress={file.progress}/>
                 </RowItem>
