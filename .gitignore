@@ -206,7 +206,6 @@ sketch
 # and uncomment the following lines
 # .pnp.*
 
-# Uploaded files
+# files
 Upload_file/
-
 Rule_file/
