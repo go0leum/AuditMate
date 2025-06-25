@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import styled from 'styled-components';
 
 // Styled-components
@@ -48,7 +48,18 @@ const StyledTextarea = styled.textarea`
   }
 `;
 
-const MemoInput = ({ label, placeholder, value, onChange }) => {
+const MemoInput = forwardRef(({ label, placeholder, value, onChange }, ref) => {
+  // Enter 키 누르면 blur
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation(); // ← 이 줄 추가!
+      if (ref && typeof ref !== 'function' && ref.current) {
+        ref.current.blur();
+      }
+    }
+  };
+
   return (
     <TextareaContainer>
       <Label>{label}</Label>
@@ -57,10 +68,12 @@ const MemoInput = ({ label, placeholder, value, onChange }) => {
           placeholder={placeholder}
           value={value}
           onChange={onChange}
+          ref={ref}
+          onKeyDown={handleKeyDown}
         />
       </TextareaWrapper>
     </TextareaContainer>
   );
-};
+});
 
 export default MemoInput;

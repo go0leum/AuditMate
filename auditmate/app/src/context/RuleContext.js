@@ -83,13 +83,6 @@ const RuleProvider = ({ children }) => {
     }
   }, []);
 
-  // localStorage 저장 useEffect 제거
-  // useEffect(() => {
-  //   if (editRule) {
-  //     localStorage.setItem('editRule', JSON.stringify(editRule));
-  //   }
-  // }, [editRule]);
-
   useEffect(() => {
     if (!editRule) return;
     if (skipNextSave) {

@@ -1,6 +1,17 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
+
+import { TableContext } from '../../context/TableContext';
 import { RuleContext } from '../../context/RuleContext';
+
+// 배열을 n개씩 잘라주는 유틸 함수
+function chunkArray(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
 
 const Wrapper = styled.div`
   align-self: stretch;
@@ -26,8 +37,8 @@ const SubTitle = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  color: #0647A9;           // 원하는 색상으로 변경
-  font-size: 14px;          // 원하는 크기로 변경
+  color: #0647A9;
+  font-size: 14px;
   font-family: 'NanumGothic', sans-serif;
   font-weight: 500;
   word-wrap: break-word;
@@ -86,32 +97,94 @@ const ButtonText = styled.div`
   justify-content: center;
 `;
 
-const DocumentList = ({ category, proof, selectedDocument, setSelectedDocument }) => {
+const DocumentList = ({ category, proof, selectedIndex, checkedDocuments }) => {
   const { selectedDocumentRule } = useContext(RuleContext);
+  const { handleCheckedDocumentsChange } = useContext(TableContext);
+  const inputBuffer = useRef('');
 
-  // 방어 코드 추가
-  if (!selectedDocumentRule) {
-    return null; // 또는 로딩 메시지/빈 UI 등
-  }
+  // useMemo로 sections 생성
+  const documentSections = useMemo(
+    () => selectedDocumentRule.세목별서류?.[category] || {},
+    [selectedDocumentRule.세목별서류, category]
+  );
+  const proofSections = useMemo(
+    () => selectedDocumentRule.증빙구분별서류?.[proof] || {},
+    [selectedDocumentRule.증빙구분별서류, proof]
+  );
 
-  const documentSections = selectedDocumentRule.세목별서류?.[category] || {};
-  const proofSections = selectedDocumentRule.증빙구분별서류?.[proof] || {};
+  // 1. doc 버튼에 번호 부여 (1번부터)
+  const docList = useMemo(() => {
+    let docs = [];
+    Object.entries(documentSections).forEach(([phase, phaseDocs]) => {
+      docs = docs.concat(phaseDocs);
+    });
+    Object.entries(proofSections).forEach(([proofType, proofDocs]) => {
+      docs = docs.concat(proofDocs);
+    });
+    // 중복 제거
+    return [...new Set(docs)];
+  }, [documentSections, proofSections]);
 
-  const handleClick = (doc) => {
-    setSelectedDocument(doc);
-  };
+  // handleClick을 useCallback으로 감싸고, useEffect deps에 포함
+  const handleClick = useCallback((doc) => {
+    let newChecked;
+    if (checkedDocuments.includes(doc)) {
+      newChecked = checkedDocuments.filter(d => d !== doc);
+    } else {
+      newChecked = [...checkedDocuments, doc];
+    }
+    handleCheckedDocumentsChange(selectedIndex, newChecked);
+  }, [checkedDocuments, handleCheckedDocumentsChange, selectedIndex]);
 
-  // 🔥 Helper function: 문서를 3개씩 그룹화
-  const chunkArray = (arr, size) => {
-    return Array.from({ length: Math.ceil(arr.length / size) }, (_, index) =>
-      arr.slice(index * size, index * size + size)
-    );
-  };
+  // 번호 입력 로직: 1~9, 0(10), +1~+9(11~19), +0(20)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // + 입력 시작
+      if (e.key === '+') {
+        inputBuffer.current = '+';
+        return;
+      }
+      // +가 입력된 상태에서 숫자 입력
+      if (inputBuffer.current === '+' && /^\d$/.test(e.key)) {
+        let idx;
+        if (e.key === '0') {
+          idx = 19; // +0 → 20번째(인덱스 19)
+        } else {
+          idx = 10 + Number(e.key) - 1; // +1~+9 → 11~19번째(인덱스 10~18)
+        }
+        if (docList[idx]) {
+          handleClick(docList[idx]);
+        }
+        inputBuffer.current = '';
+        return;
+      }
+      // 일반 숫자 입력
+      if (/^\d$/.test(e.key)) {
+        let idx;
+        if (e.key === '0') {
+          idx = 9; // 0 → 10번째(인덱스 9)
+        } else {
+          idx = Number(e.key) - 1; // 1~9 → 1~9번째(인덱스 0~8)
+        }
+        if (docList[idx]) {
+          handleClick(docList[idx]);
+        }
+        inputBuffer.current = '';
+        return;
+      }
+      // 그 외 입력 시 버퍼 초기화
+      inputBuffer.current = '';
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [docList, handleClick]);
+
+  // 3. 버튼에 번호 표시
+  let docIdx = 0;
 
   return (
     <Wrapper>
       <Title>검토 문서 리스트</Title>
-
       <Section>
         <SubTitle>세목별 서류: {category}</SubTitle>
         {Object.entries(documentSections).map(([phase, docs]) => (
@@ -121,15 +194,20 @@ const DocumentList = ({ category, proof, selectedDocument, setSelectedDocument }
                 {rowIndex === 0 && <Label>{phase}</Label>}
                 {rowIndex > 0 && <Label>{''}</Label>}
                 {docGroup.map(doc => (
-                  <Button key={doc} $active={selectedDocument === doc} onClick={() => handleClick(doc)}>
-                    <ButtonText $active={selectedDocument === doc}>{doc}</ButtonText>
+                  <Button
+                    key={doc}
+                    $active={checkedDocuments.includes(doc)}
+                    onClick={() => handleClick(doc)}
+                  >
+                    <ButtonText $active={checkedDocuments.includes(doc)}>
+                      {`${++docIdx}. ${doc}`}
+                    </ButtonText>
                   </Button>
                 ))}
               </Row>
             ))}
           </React.Fragment>
         ))}
-
         <SubTitle>증빙구분별 서류: {proof}</SubTitle>
         {Object.entries(proofSections).map(([proofType, docs]) => (
           <React.Fragment key={proofType}>
@@ -137,8 +215,14 @@ const DocumentList = ({ category, proof, selectedDocument, setSelectedDocument }
               <Row key={`${proofType}-${rowIndex}`}>
                 {rowIndex === 0 && <Label>{proofType}</Label>}
                 {docGroup.map(doc => (
-                  <Button key={doc} $active={selectedDocument === doc} onClick={() => handleClick(doc)}>
-                    <ButtonText $active={selectedDocument === doc}>{doc}</ButtonText>
+                  <Button
+                    key={doc}
+                    $active={checkedDocuments.includes(doc)}
+                    onClick={() => handleClick(doc)}
+                  >
+                    <ButtonText $active={checkedDocuments.includes(doc)}>
+                      {`${++docIdx}. ${doc}`}
+                    </ButtonText>
                   </Button>
                 ))}
               </Row>

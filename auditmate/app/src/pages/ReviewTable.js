@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import styled from 'styled-components';
 
 import { TableContext } from '../context/TableContext';
@@ -7,11 +7,10 @@ import TopBar from '../components/layout/TopBar';
 import SideBar from '../components/layout/SideBar';
 import BaseContainer from '../components/layout/BaseContainer';
 import Table from '../components/layout/Table';
-import TagDropdown from '../components/common/TagDropdown';
 import TableDrawer from '../components/layout/TableDrawer';
+import Tag from '../components/common/Tag'; // 상단 import 추가
 
 import Button from '../components/common/Button';
-import RowExpand from '../components/common/RowExpand';
 import { RuleContext } from '../context/RuleContext';
 import RowContainer from '../components/layout/RowContainer';
 import RowItem from '../components/common/RowItem';
@@ -24,13 +23,12 @@ const Line = styled.div`
 `;
 
 const ReviewTable = () => {
-  const { tableData, handleTagSelect, handleExport, fetchExcelData, selectedXlsxFile } = useContext(TableContext);
+  const { tableData, handleExport, fetchExcelData, selectedXlsxFile } = useContext(TableContext);
   const { selectedCategoryRule, selectedDocumentRule, ruleLoading } = useContext(RuleContext);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [TableDrawerOpen, setTableDrawerOpen] = useState(false);
   const [sortValue, setSortValue] = useState('original');
-  const [expandedRows, setExpandedRows] = useState({});
   const [drawerIndex, setDrawerIndex] = useState(0);
 
   const data = tableData.map((row, idx) => ({ ...row, _originalIndex: idx }));
@@ -117,6 +115,24 @@ const ReviewTable = () => {
 
   const sortedData = getSortedData(filteredData, sortValue);
 
+  // d키를 누르면 TableDrawer 열기
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // 입력창에 포커스가 없을 때만 동작 (원하면 제거)
+      if (
+        document.activeElement.tagName === 'INPUT' ||
+        document.activeElement.tagName === 'TEXTAREA'
+      ) {
+        return;
+      }
+      if (e.key === 'e' || e.key === 'E') {
+        setTableDrawerOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // --- 데이터 준비 전에는 안내문만 출력 ---
   if (
     ruleLoading ||
@@ -173,40 +189,25 @@ const ReviewTable = () => {
                       } else if (column.label === '증빙구분' || column.label === '세목명') {
                         return (
                           <RowItem key={colIndex} width={column.width}>
-                            <div onMouseDown={(e) => e.stopPropagation()} onClick={e => e.stopPropagation()}>
-                              <TagDropdown
-                                options={selectedCategoryRule?.[column.label] || []}
-                                value={value}
-                                onSelect={(selected) => handleTagSelect(row._originalIndex, column.label, selected)}
-                              />
-                            </div>
+                            <Tag
+                              options={selectedCategoryRule?.[column.label] || []}
+                              value={value}
+                            >
+                              {value}
+                            </Tag>
                           </RowItem>
                         );
                       } else if (column.label === '검토내용') {
                         return (
-                          <RowItem
-                            key={colIndex}
-                            width={column.width}
-                            style={{ cursor: typeof value === 'object' && value !== null ? 'pointer' : 'default' }}
-                            onClick={e => {
-                              e.stopPropagation();
-                              if (typeof value === 'object' && value !== null) {
-                                setExpandedRows(prev => ({
-                                  ...prev,
-                                  [index]: !prev[index]
-                                }));
-                              }
-                            }}
-                          >
-                            {typeof value === 'object' && value !== null
-                              ? Object.keys(value).join(', ')
-                              : value ?? '-'}
-                            {expandedRows[index] && typeof value === 'object' && value !== null && (
-                              <RowExpand value={value} />
-                            )}
+                          <RowItem key={colIndex} width={column.width}>
+                            {Array.isArray(value)
+                              ? value.join(', ')
+                              : typeof value === 'object' && value !== null
+                                ? JSON.stringify(value)
+                                : (value ?? '-')}
                           </RowItem>
                         );
-                      } else if (column.label === '메모' || column.label === '보완사항') {
+                      } else if (column.label === '메모' || column.label === '보완사항' || column.label === '검토내용') {
                         return (
                           <RowItem key={colIndex} width={column.width}>
                             {(value && typeof value === 'string')

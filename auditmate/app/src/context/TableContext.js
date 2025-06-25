@@ -12,6 +12,71 @@ const TableProvider = ({ children }) => {
   const [selectedXlsxFile, setSelectedXlsxFile] = useState(null);
   const [tableData, setTableData] = useState([]);
 
+  
+  const fetchExcelData = useCallback(async () => {
+    if (!selectedXlsxFile) return;
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/read-xlsx/', {
+        folderName: selectedXlsxFile?.folderName,
+        xlsxFile: selectedXlsxFile?.xlsxFile,
+      });
+
+      const { status, data, message, expected_columns, actual_columns } = response.data;
+
+      if (status === 'success') {
+        // '검토내용'을 항상 배열로 변환
+        const normalizedData = data.map(row => ({
+          ...row,
+          검토내용: Array.isArray(row.검토내용)
+            ? row.검토내용
+            : typeof row.검토내용 === 'string' && row.검토내용.trim() !== ''
+              // 괄호 밖 쉼표만 분할
+              ? row.검토내용.split(/,(?![^(]*\))/).map(s => s.trim())
+              : []
+        }));
+        setTableData(normalizedData);
+      } else if (status === 'warning') {
+        alert(
+          `⚠️ 컬럼명이 다릅니다.\n\n[예상 컬럼]\n${expected_columns.join(', ')}\n\n[실제 컬럼]\n${actual_columns.join(', ')}\n\n${message}`
+        );
+        setTableData([]);
+      } else {
+        console.error("Server returned unexpected structure:", response.data);
+        setTableData([]);
+      }
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setTableData([]);
+    }
+  }, [selectedXlsxFile]); 
+
+  const saveTableData = useCallback(async (data) => {
+    // 서버로 보낼 때만 변환
+    const dataToSave = data.map(row => ({
+      ...row,
+      검토내용: Array.isArray(row.검토내용) ? row.검토내용.join(', ') : row.검토내용
+    }));
+    try {
+      await axios.post('http://localhost:8000/api/save-xlsx/', {
+        folderName: selectedXlsxFile?.folderName,
+        xlsxFile: selectedXlsxFile?.xlsxFile,
+        lastModified: selectedXlsxFile?.lastModified,
+        data: dataToSave,
+      });
+    } catch (error) {
+      console.error("Error saving data:", error);
+    }
+  }, [selectedXlsxFile]);
+
+  const debouncedSave = useMemo(
+    () => debounce((data) => {
+      saveTableData(data);
+    }, 100), //변경후 0.1초후 저장
+    [saveTableData]
+  );
+
   // 앱 시작 시 localStorage에서 복원
   useEffect(() => {
     const savedFile = localStorage.getItem('selectedXlsxFile');
@@ -38,57 +103,34 @@ const TableProvider = ({ children }) => {
     }
   }, [tableData]);
 
-  const fetchExcelData = useCallback(async () => {
-    if (!selectedXlsxFile) return;
-
-    try {
-      const response = await axios.post('http://localhost:8000/api/read-xlsx/', {
-        folderName: selectedXlsxFile?.folderName,
-        xlsxFile: selectedXlsxFile?.xlsxFile,
-      });
-
-      const { status, data, message, expected_columns, actual_columns } = response.data;
-
-      if (status === 'success') {
-        setTableData(data);
-      } else if (status === 'warning') {
-        alert(
-          `⚠️ 컬럼명이 다릅니다.\n\n[예상 컬럼]\n${expected_columns.join(', ')}\n\n[실제 컬럼]\n${actual_columns.join(', ')}\n\n${message}`
-        );
-        setTableData([]);
-      } else {
-        console.error("Server returned unexpected structure:", response.data);
-        setTableData([]);
-      }
-
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setTableData([]);
+  // 자동 저장
+  useEffect(() => {
+    if (selectedXlsxFile && tableData.length > 0) {
+      debouncedSave(tableData);
     }
-  }, [selectedXlsxFile]); 
+    return () => debouncedSave.cancel();
+  }, [selectedXlsxFile, tableData, debouncedSave]);
 
-  const prepareTableDataForSave = (data) =>
-    data.map(row => ({
-      ...row,
-      검토내용:
-        row.검토내용 && typeof row.검토내용 === 'object'
-          ? JSON.stringify(row.검토내용)
-          : row.검토내용,
-    }));
-
-  const saveTableData = useCallback(async (data) => {
-    try {
-      const preparedData = prepareTableDataForSave(data);
-      await axios.post('http://localhost:8000/api/save-xlsx/', {
-        folderName: selectedXlsxFile?.folderName,
-        xlsxFile: selectedXlsxFile?.xlsxFile,
-        lastModified: selectedXlsxFile?.lastModified,
-        data: preparedData,
-      });
-    } catch (error) {
-      console.error("Error saving data:", error);
+  // reviewTable 진입 시 규칙이 모두 준비되면 항상 서버에서 데이터 fetch
+  useEffect(() => {
+    if (
+      location.pathname.includes('/reviewTable/') &&
+      selectedXlsxFile &&
+      !ruleLoading &&
+      selectedCategoryRule &&
+      selectedDocumentRule
+    ) {
+      fetchExcelData();
     }
-  }, [selectedXlsxFile]);
+    // fetchExcelData는 useCallback이므로 의존성 배열에 포함
+  }, [
+    location.pathname,
+    selectedXlsxFile,
+    ruleLoading,
+    selectedCategoryRule,
+    selectedDocumentRule,
+    fetchExcelData,
+  ]);
 
   const handleExport = async () => {
     try {
@@ -109,13 +151,6 @@ const TableProvider = ({ children }) => {
     }
   };
 
-  const debouncedSave = useMemo(
-    () => debounce((data) => {
-      saveTableData(data);
-    }, 100), //변경후 0.1초후 저장
-    [saveTableData]
-  );
-
   const handleTagSelect = useCallback((originalIndex, label, selected) => {
     setTableData(prev =>
       prev.map((row, idx) =>
@@ -124,11 +159,11 @@ const TableProvider = ({ children }) => {
     );
   }, [setTableData]);
 
-  const handleReviewContentSave = useCallback((selectedIndex, newContent) => {
-    setTableData(prev =>
-      prev.map((r, idx) =>
+  const handleCheckedDocumentsChange = useCallback((selectedIndex, docs) => {
+    setTableData(prevTable =>
+      prevTable.map((r, idx) =>
         idx === selectedIndex
-          ? { ...r, 검토내용: newContent }
+          ? { ...r, 검토내용: Array.isArray(docs) ? docs : [docs] }
           : r
       )
     );
@@ -154,35 +189,6 @@ const TableProvider = ({ children }) => {
     );
   }, [setTableData]);
 
-  // reviewTable 진입 시 규칙이 모두 준비되면 항상 서버에서 데이터 fetch
-  useEffect(() => {
-    if (
-      location.pathname.includes('/reviewTable/') &&
-      selectedXlsxFile &&
-      !ruleLoading &&
-      selectedCategoryRule &&
-      selectedDocumentRule
-    ) {
-      fetchExcelData();
-    }
-    // fetchExcelData는 useCallback이므로 의존성 배열에 포함
-  }, [
-    location.pathname,
-    selectedXlsxFile,
-    ruleLoading,
-    selectedCategoryRule,
-    selectedDocumentRule,
-    fetchExcelData,
-  ]);
-
-  // 자동 저장
-  useEffect(() => {
-    if (selectedXlsxFile && tableData.length > 0) {
-      debouncedSave(tableData);
-    }
-    return () => debouncedSave.cancel();
-  }, [selectedXlsxFile, tableData, debouncedSave]);
-
   return (
     <TableContext.Provider 
       value={{
@@ -194,7 +200,8 @@ const TableProvider = ({ children }) => {
         setTableData,
         fetchExcelData,
         ruleLoading,
-        handleReviewContentSave,
+        // handleReviewContentSave,
+        handleCheckedDocumentsChange,
         handleMemoChange,
         handleNoteChange,
       }}

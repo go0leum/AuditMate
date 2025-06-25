@@ -246,17 +246,6 @@ def read_xlsx(request):
             df.columns = df.columns.str.strip()
             df = df.replace({np.nan: None})
 
-            # '검토내용' 컬럼이 문자열이면 dict로 변환
-            if "검토내용" in df.columns:
-                def parse_review(val):
-                    if isinstance(val, str):
-                        try:
-                            return json.loads(val)
-                        except Exception:
-                            return val
-                    return val
-                df["검토내용"] = df["검토내용"].apply(parse_review)
-
             progress = calculate_progress(df)
 
             metadata_path = os.path.join(UPLOAD_DIR, folderName, "metadata.json")
@@ -318,6 +307,16 @@ def save_xlsx(request):
 
             if not folder_name or not xlsx_file or not data:
                 return JsonResponse({"status": "error", "message": "필수 정보가 누락되었습니다."}, status=400)
+
+            # 검토내용이 빈값이면 항상 빈 문자열로 저장
+            for row in data:
+                review = row.get("검토내용")
+                if not review or (isinstance(review, list) and len(review) == 0):
+                    row["검토내용"] = ""
+                elif isinstance(review, list):
+                    row["검토내용"] = ", ".join(str(x) for x in review)
+                else:
+                    row["검토내용"] = str(review)
 
             file_path = os.path.join(UPLOAD_DIR, folder_name, xlsx_file)
 
