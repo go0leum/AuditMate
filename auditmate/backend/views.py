@@ -13,17 +13,18 @@ import io
 
 UPLOAD_DIR = os.path.join(settings.BASE_DIR, "Upload_file")
 RULE_DIR = os.path.join(settings.BASE_DIR, "Rule_file")
+CONTACT_DIR = os.path.join(settings.BASE_DIR, "Contact_file")
 
 def calculate_progress(df):
     """
-    '검토내용' 열을 기준으로 진행도를 계산합니다.
+    '검토사항' 열을 기준으로 진행도를 계산합니다.
     진행도 = 마지막으로 채워진 행의 인덱스 / 전체 행 수 * 100
     """
-    if "검토내용" in df.columns:
+    if "검토사항" in df.columns:
         total_rows = len(df)
         if total_rows == 0:
             return 0
-        filled_rows = df[df["검토내용"].notna()].index.max() + 1 if not df[df["검토내용"].notna()].empty else 0
+        filled_rows = df[df["검토사항"].notna()].index.max() + 1 if not df[df["검토사항"].notna()].empty else 0
         return round(filled_rows * 100 / total_rows, 2)
     return 0
 
@@ -37,10 +38,7 @@ def list_files(request):
         folder_path = os.path.join(UPLOAD_DIR, folder_name)
         if os.path.isdir(folder_path):  
             xlsx_files = [f for f in os.listdir(folder_path) if f.endswith(".xlsx")]
-            sub_folders = [f for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f))]
-
             xlsx_file = xlsx_files[0] if xlsx_files else None
-            sub_folder = sub_folders[0] if sub_folders else "없음"
 
             metadata_path = os.path.join(folder_path, "metadata.json")
             metadata_info = {}
@@ -71,10 +69,9 @@ def list_files(request):
             result.append({
                 "folderName": folder_name,
                 "xlsxFile": xlsx_file,
-                "documentDir": sub_folder,
-                "lastModified": metadata_info["lastModified"],
+                "lastModified": metadata_info.get("lastModified", ""),
                 "progress": progress,  # 계산된 진행도 반영
-                "ruleName": metadata_info["ruleName"],
+                "ruleName": metadata_info.get("ruleName", ""),
             })
 
     return JsonResponse(result, safe=False)
@@ -84,7 +81,6 @@ def list_rules(request):
         return JsonResponse({"error": "Rule_file 폴더가 존재하지 않습니다."}, status=404)
 
     result = []
-    upload_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     for folder_name in os.listdir(RULE_DIR):
         folder_path = os.path.join(RULE_DIR, folder_name)
         if os.path.isdir(folder_path):  
@@ -106,7 +102,20 @@ def list_rules(request):
                 except Exception as e:
                     print(f"Rule 파일 읽기 오류: {e}")
                     category_rule = {}
-        
+            
+            # uploadTime을 "%Y-%m-%d %H:%M:%S" 형식으로
+            upload_time = None
+            metadata_path = os.path.join(folder_path, "metadata.json")
+            if os.path.exists(metadata_path):
+                try:
+                    with open(metadata_path, "r", encoding="utf-8") as f:
+                        metadata = json.load(f)
+                    upload_time = metadata.get("uploadTime")
+                except Exception as e:
+                    print(f"metadata.json 읽기 오류: {e}")
+            if not upload_time:
+                upload_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
             result.append({
                 "folderName": folder_name,
                 "documentRule": document_rule,
@@ -131,8 +140,8 @@ def download_file(request, folder_name, file_name):
             import tempfile
             df = pd.read_excel(file_path)
             if download_type == 'no_review':
-                # '검토내용', '보완사항', '메모' 열 제외
-                cols_to_exclude = ['검토내용', '메모']
+                # '검토사항', '보완사항', '메모' 열 제외
+                cols_to_exclude = ['검토사항', '메모']
                 cols_to_keep = [col for col in df.columns if col not in cols_to_exclude]
                 df_export = df[cols_to_keep]
             else:
@@ -167,13 +176,11 @@ def upload_files(request):
     if request.method == "POST":
         upload_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         upload_dir = os.path.join(UPLOAD_DIR, upload_time)
-
-        os.makedirs(upload_dir, exist_ok=True)  # 업로드 폴더 생성
+        os.makedirs(upload_dir, exist_ok=True)
 
         metadata = {
             "folderName": upload_time,
             "xlsxFile": None,
-            "documentDir": [],
             "lastModified": upload_time,
             "progress": 0,
             "ruleName": None,
@@ -187,43 +194,20 @@ def upload_files(request):
             saved_excel_path = fs.save(excel_file.name, excel_file)
             metadata["xlsxFile"] = saved_excel_path
 
-        # ZIP 파일 처리
-        if "attachment_folder" in request.FILES:
-            zip_file = request.FILES["attachment_folder"]
-            zip_path = os.path.join(upload_dir, zip_file.name)
-
-            try:
-                # ZIP 파일 저장
-                fs.save(zip_file.name, zip_file)
-
-                # ZIP 압축 해제
-                with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                    zip_ref.extractall(upload_dir)
-
-                # 폴더 내부 파일 저장
-                extracted_files = []
-                for root, _, files in os.walk(upload_dir):
-                    for file in files:
-                        extracted_files.append(os.path.join(root, file))
-
-                metadata["documentDir"] = extracted_files
-
-                # ZIP 파일 삭제 (선택 사항)
-                os.remove(zip_path)
-
-            except Exception as e:
-                print(f"ZIP 파일 처리 오류: {e}")
-                return JsonResponse({"error": "ZIP 파일 처리 실패"}, status=500)
-        
-        # 진행도 계산 (Excel 파일에서 "검토내용" 열 기준)
+        # 진행도 계산 (Excel 파일에서 "검토사항" 열 기준)
         if metadata["xlsxFile"]:
             try:
                 df = pd.read_excel(os.path.join(upload_dir, metadata["xlsxFile"]))
                 metadata["progress"] = calculate_progress(df)
                 metadata["lastModified"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             except Exception as e:
-                print(f"Excel 진행도 계산 오류: {e}")
-        
+                # 정렬/필터 등으로 읽기 실패 시 에러 메시지 반환
+                return JsonResponse({
+                    "status": "error",
+                    "message": '업로드에 실패했습니다. xlsx file에 "정렬 및 필터"를 제거해 주시고 "단일 시트"로 변경해주세요.',
+                    "error_detail": str(e)
+                }, status=400)
+
         # Rule_file에서 첫번째 폴더 이름 가져오기
         rule_name = None
         if os.path.exists(RULE_DIR):
@@ -249,8 +233,14 @@ def upload_files(request):
 @csrf_exempt
 def read_xlsx(request):
     expected_columns = [
-        '집행실행일자', '증빙구분', '집행용도', '비목명', '세목명',
-        '거래처명', '예금주명', '집행금액', '검토내용', '메모', '보완사항'
+        'N', '항목명', '세부항목명', '교부액', '실집행액', '최종교부액', '초과집행액', '증빙번호', '비고',
+        '준수 여부', '단가 (이내)', '기준', '집행실행일자', '증빙구분', '집행용도', '비목명', '세목명',
+        '거래처명', '예금주명', '공급가액(A)', '부가세(B)', '집행취소(C)', '집행금액(A+B)-C',
+        '취소사유', '검토사항', '메모', '보완사항', '답변', '회계연도', '사업명', '과제명', '예산코드',
+        '예산잔액', '세금계산서 발행 여부', '지출 승인자', '지급수단', '증빙파일 존재 여부', '증빙유형 상세',
+        '법인카드 번호', '계좌번호', '내부규정 부합 여부', '중복 집행 여부', '거래처 등록 여부',
+        '입찰/계약서 존재 여부', '감사 메모', '감사 소견', '지출 사유 요약', '첨부파일명', '업로드 일시',
+        '담당자', '반려 사유', '단가', '공급가액', '부가세', '집행취소', '집행금액',
     ]
 
     if request.method == 'POST':
@@ -267,7 +257,18 @@ def read_xlsx(request):
             if not os.path.exists(file_path):
                 return JsonResponse({'status': 'error', 'message': 'File not found'}, status=404)
 
-            df = pd.read_excel(file_path)
+            try:
+                df = pd.read_excel(file_path)
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'data': None,
+                    'message': '엑셀 파일에 정렬(필터) 조건이 포함되어 있으면 읽을 수 없습니다. 엑셀에서 모든 정렬/필터를 해제하고 다시 업로드 해주세요.',
+                    'error_detail': str(e),
+                    'expected_columns': expected_columns,
+                    'actual_columns': [],
+                }, status=500, safe=False, json_dumps_params={'ensure_ascii': False})
+
             df.columns = df.columns.str.strip()
             df = df.replace({np.nan: None})
 
@@ -285,13 +286,16 @@ def read_xlsx(request):
                 except Exception as e:
                     print(f"Metadata 업데이트 오류: {e}")
 
-            if list(df.columns) != expected_columns:
+            actual_columns = list(df.columns)
+            extra_columns = [col for col in actual_columns if col not in expected_columns]
+            if extra_columns:
                 return JsonResponse({
                     'status': 'warning',
-                    'message': '엑셀 파일의 컬럼명이 예상과 다릅니다. 컬럼명을 다음과 같이 수정해 주세요.',
+                    'message': '엑셀 파일에 예상치 못한 컬럼이 있습니다. 컬럼명을 수정해 주세요.',
                     'data': None,
                     'expected_columns': expected_columns,
-                    'actual_columns': list(df.columns)
+                    'actual_columns': actual_columns,
+                    'extra_columns': extra_columns
                 }, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
 
             data = df.to_dict(orient='records')
@@ -300,7 +304,7 @@ def read_xlsx(request):
                 'data': data,
                 'message': '엑셀 파일을 성공적으로 읽었습니다.',
                 'expected_columns': expected_columns,
-                'actual_columns': list(df.columns)
+                'actual_columns': actual_columns
             }, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
 
         except Exception as e:
@@ -333,15 +337,15 @@ def save_xlsx(request):
             if not folder_name or not xlsx_file or not data:
                 return JsonResponse({"status": "error", "message": "필수 정보가 누락되었습니다."}, status=400)
 
-            # 검토내용이 빈값이면 항상 빈 문자열로 저장
+            # 검토사항이 빈값이면 항상 빈 문자열로 저장
             for row in data:
-                review = row.get("검토내용")
+                review = row.get("검토사항")
                 if not review or (isinstance(review, list) and len(review) == 0):
-                    row["검토내용"] = ""
+                    row["검토사항"] = ""
                 elif isinstance(review, list):
-                    row["검토내용"] = ", ".join(str(x) for x in review)
+                    row["검토사항"] = ", ".join(str(x) for x in review)
                 else:
-                    row["검토내용"] = str(review)
+                    row["검토사항"] = str(review)
 
             file_path = os.path.join(UPLOAD_DIR, folder_name, xlsx_file)
 
@@ -371,7 +375,7 @@ def save_xlsx(request):
 @csrf_exempt
 def upload_rules(request):
     if request.method == "POST":
-        upload_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        upload_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         rule_name = request.POST.get("rule_name")
         rule_dir = os.path.join(RULE_DIR, rule_name)
         os.makedirs(rule_dir, exist_ok=True)
@@ -559,3 +563,45 @@ def delete_rule(request, folder_name):
         return JsonResponse({"status": "success", "message": f"{folder_name} 규칙 삭제 완료"})
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+@csrf_exempt
+def read_contact_info(request):
+    """
+    Contact_file 폴더의 Contact_info.xlsx 파일을 읽어서 데이터를 반환합니다.
+    파일이 없으면 지정된 헤더로 빈 파일을 생성합니다.
+    """
+    contact_file_path = os.path.join(CONTACT_DIR, "Contact_Info.xlsx")
+    required_columns = [
+        "상위기관", "사업명", "보조사업자명", "보조사업명", "담당자",
+        "전화번호", "이메일", "상태", "마감일", "메모"
+    ]
+
+    # Contact_file 폴더가 없으면 생성
+    os.makedirs(CONTACT_DIR, exist_ok=True)
+
+    # 파일이 없으면 헤더만 있는 빈 파일 생성
+    if not os.path.exists(contact_file_path):
+        df = pd.DataFrame(columns=required_columns)
+        df.to_excel(contact_file_path, index=False)
+
+    try:
+        df = pd.read_excel(contact_file_path)
+        # 헤더가 다르면 파일을 덮어씀
+        if list(df.columns) != required_columns:
+            df = pd.DataFrame(columns=required_columns)
+            df.to_excel(contact_file_path, index=False)
+        df = df.replace({np.nan: None})
+        data = df.to_dict(orient='records')
+        return JsonResponse({
+            "status": "success",
+            "data": data,
+            "columns": required_columns,
+            "message": "Contact_info.xlsx 파일을 성공적으로 읽었습니다."
+        }, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
+    except Exception as e:
+        print("Contact_info.xlsx 읽기 오류:", str(e))  # <-- 추가
+        return JsonResponse({
+            "status": "error",
+            "message": f"Contact_info.xlsx 읽기 오류: {str(e)}",
+            "data": None
+        }, status=500)

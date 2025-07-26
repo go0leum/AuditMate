@@ -11,6 +11,7 @@ const ModalOverlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 200;
   background: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: center;
@@ -71,20 +72,19 @@ const ButtonGroup = styled.div`
 `;
 
 const UploadFileModal = ({ isOpen, onClose }) => {
-  const { excelFile, attachmentFolder, setExcelFile, setAttachmentFolder, handleUpload } = useContext(FileContext);
+  const { excelFile, setExcelFile, handleUpload, fetchFileData } = useContext(FileContext); // fetchFileData 추가
 
   const excelInputRef = useRef();
-  const folderInputRef = useRef();
 
   // 모달 닫기 + 파일 리셋
   const handleClose = () => {
     setExcelFile(null);
-    setAttachmentFolder(null);
     if (onClose) onClose();
   };
 
-  const handleUploadAndClose = () => {
-    handleUpload("file");
+  const handleUploadAndClose = async () => {
+    await handleUpload("file");
+    await fetchFileData(); // 업로드 후 파일 목록 새로고침
     handleClose(); // 업로드 후 모달 닫기
   };
 
@@ -103,8 +103,16 @@ const UploadFileModal = ({ isOpen, onClose }) => {
                 style={{ display: "none" }}
                 onChange={(e) => setExcelFile(e.target.files[0])}
               />
-              <Button onClick={() => excelInputRef.current.click()}>
-                Upload
+              <Button
+                onClick={() => excelInputRef.current.click()}
+                style={{
+                  fontSize: "11px",
+                  padding: "6px 12px",
+                  lineHeight: "1.1", // 줄간 간격을 더 좁게
+                  minHeight: "32px"
+                }}
+              >
+                Choose <br /> File
               </Button>
               <DisplayBox className={excelFile ? "" : "placeholder"}>
                 {excelFile ? excelFile.name : "파일을 선택하세요" }

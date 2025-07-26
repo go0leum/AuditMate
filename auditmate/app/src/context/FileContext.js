@@ -7,7 +7,6 @@ export const FileContext = createContext();
 
 const FileProvider = ({ children }) => {
   const [excelFile, setExcelFile] = useState(null);
-  const [attachmentFolder, setAttachmentFolder] = useState(null);
   const [ruleName, setRuleName] = useState(null);
   const [documentRule, setDocumentRule] = useState(null);
   const [categoryRule, setCategoryRule] = useState(null);
@@ -60,8 +59,8 @@ const FileProvider = ({ children }) => {
 
   // 파일 다운로드 함수 분리
   const downloadFiles = async (targets) => {
-    // 사용자에게 검토내용/메모 포함 여부 확인
-    const includeReview = window.confirm("다운로드 파일에 '검토내용' 및 '메모' 열을 포함하시겠습니까?");
+    // 사용자에게 검토사항/메모 포함 여부 확인
+    const includeReview = window.confirm("다운로드 파일에 '검토사항' 및 '메모' 열을 포함하시겠습니까?");
     try {
       await Promise.all(
         targets.map(async (item) => {
@@ -167,14 +166,11 @@ const FileProvider = ({ children }) => {
     let uploadUrl = "http://localhost:8000/api/upload/";
 
     if (type === "file") {
-      if (excelFile && attachmentFolder) {
+      if (excelFile) {
         formData.append("excel_file", excelFile);
-        Array.from(attachmentFolder).forEach((file) => {
-          formData.append("attachment_folder", file);
-        });
-        uploadUrl = "http://localhost:8000/api/upload/"; // 파일 업로드용 URL
+        uploadUrl = "http://localhost:8000/api/upload/";
       } else {
-        alert("Excel 파일과 첨부파일 폴더를 선택하세요.");
+        alert("Excel 파일을 선택하세요.");
         return;
       }
     } else if (type === "rule") {
@@ -182,7 +178,7 @@ const FileProvider = ({ children }) => {
         formData.append("rule_name", ruleName);
         formData.append("document_rule", documentRule);
         formData.append("category_rule", categoryRule);
-        uploadUrl = "http://localhost:8000/api/rule_upload/"; // 규칙 업로드용 URL (예시)
+        uploadUrl = "http://localhost:8000/api/rule_upload/";
       } else {
         alert("규칙 이름과 검토 자료 규칙, 증빙 구분 & 세목명 규칙을 입력하세요.");
         return;
@@ -197,9 +193,30 @@ const FileProvider = ({ children }) => {
         method: "POST",
         body: formData,
       });
+      const data = await response.json();
 
-      if (response.ok) {
-        alert("파일 업로드 성공!");
+      if (response.ok && data.status !== "error") {
+        // 업로드 성공 후 read_xlsx로 실제 데이터 읽기 검증
+        const folderName = data.metadata.folderName;
+        const xlsxFile = data.metadata.xlsxFile;
+        const readRes = await fetch("http://localhost:8000/api/read-xlsx/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folderName, xlsxFile }),
+        });
+        const readData = await readRes.json();
+
+        if (readRes.ok && readData.status === "success") {
+          alert("파일 업로드 성공!");
+          await fetchFileData();
+        } else {
+          // 업로드된 파일 삭제
+          await fetch(`http://localhost:8000/api/delete_file/${folderName}/`, {
+            method: "DELETE",
+          });
+          alert("엑셀 파일을 읽을 수 없습니다. 정렬/필터를 해제하고 다시 업로드 해주세요.");
+          await fetchFileData(); // 목록 갱신
+        }
       } else {
         alert("파일 업로드 실패!");
       }
@@ -221,7 +238,7 @@ const FileProvider = ({ children }) => {
       }
       try {
         for (const file of selectedFiles) {
-          await fetch(`http://localhost:8000/api/delete_files/${file.xlsxFile}/`, {
+          await fetch(`http://localhost:8000/api/delete_file/${file.folderName}/`, {
             method: "DELETE",
           });
         }
@@ -241,7 +258,7 @@ const FileProvider = ({ children }) => {
       }
       try {
         for (const rule of selectedRules) {
-          await fetch(`http://localhost:8000/api/delete_rules/${rule.folderName}/`, {
+          await fetch(`http://localhost:8000/api/delete_rule/${rule.folderName}/`, {
             method: "DELETE",
           });
         }
@@ -275,14 +292,12 @@ const FileProvider = ({ children }) => {
         ruleName,
         ruleData,
         excelFile,
-        attachmentFolder,
         documentRule,
         categoryRule,
         handleCheckboxChange,
         handleCheckExport,
         selectedFiles,
         selectedRules,
-        setAttachmentFolder,
         setExcelFile,
         setDocumentRule,
         setCategoryRule,

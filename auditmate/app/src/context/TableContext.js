@@ -11,10 +11,12 @@ const TableProvider = ({ children }) => {
   const { ruleLoading, selectedCategoryRule, selectedDocumentRule } = useContext(RuleContext);
   const [selectedXlsxFile, setSelectedXlsxFile] = useState(null);
   const [tableData, setTableData] = useState([]);
-
+  const [tableLoading, setTableLoading] = useState(false);
   
   const fetchExcelData = useCallback(async () => {
     if (!selectedXlsxFile) return;
+    setTableData([]); // 데이터 초기화
+    setTableLoading(true); // 로딩 시작
 
     try {
       const response = await axios.post('http://localhost:8000/api/read-xlsx/', {
@@ -22,33 +24,39 @@ const TableProvider = ({ children }) => {
         xlsxFile: selectedXlsxFile?.xlsxFile,
       });
 
-      const { status, data, message, expected_columns, actual_columns } = response.data;
+      const { status, data, message, extra_columns } = response.data;
 
       if (status === 'success') {
-        // '검토내용'을 항상 배열로 변환
+        // '검토사항'을 항상 배열로 변환
         const normalizedData = data.map(row => ({
           ...row,
-          검토내용: Array.isArray(row.검토내용)
-            ? row.검토내용
-            : typeof row.검토내용 === 'string' && row.검토내용.trim() !== ''
+          검토사항: Array.isArray(row.검토사항)
+            ? row.검토사항
+            : typeof row.검토사항 === 'string' && row.검토사항.trim() !== ''
               // 괄호 밖 쉼표만 분할
-              ? row.검토내용.split(/,(?![^(]*\))/).map(s => s.trim())
+              ? row.검토사항.split(/,(?![^(]*\))/).map(s => s.trim())
               : []
         }));
         setTableData(normalizedData);
+        setTableLoading(false); // 로딩 완료
       } else if (status === 'warning') {
         alert(
-          `⚠️ 컬럼명이 다릅니다.\n\n[예상 컬럼]\n${expected_columns.join(', ')}\n\n[실제 컬럼]\n${actual_columns.join(', ')}\n\n${message}`
+          `⚠️ 예상치 못한 컬럼명이 있습니다.\n\n[예외 컬럼]\n${extra_columns.join(', ')}\n\n${message}`
         );
         setTableData([]);
+        setTableLoading(false); // 로딩 완료
       } else {
         console.error("Server returned unexpected structure:", response.data);
         setTableData([]);
+        setTableLoading(false); // 로딩 완료
+        alert("데이터를 불러오는 중 오류가 발생했습니다.");
       }
 
     } catch (error) {
       console.error("Error fetching data:", error);
       setTableData([]);
+      setTableLoading(false); // 로딩 완료
+      alert("데이터를 불러오는 중 오류가 발생했습니다.");
     }
   }, [selectedXlsxFile]); 
 
@@ -56,7 +64,7 @@ const TableProvider = ({ children }) => {
     // 서버로 보낼 때만 변환
     const dataToSave = data.map(row => ({
       ...row,
-      검토내용: Array.isArray(row.검토내용) ? row.검토내용.join(', ') : row.검토내용
+      검토사항: Array.isArray(row.검토사항) ? row.검토사항.join(', ') : row.검토사항
     }));
     try {
       await axios.post('http://localhost:8000/api/save-xlsx/', {
@@ -76,6 +84,12 @@ const TableProvider = ({ children }) => {
     }, 100), //변경후 0.1초후 저장
     [saveTableData]
   );
+
+  
+  // 파일이 바뀌면 즉시 데이터 비움
+  useEffect(() => {
+    setTableData([]); // 파일이 바뀌면 즉시 데이터 비움
+  }, [selectedXlsxFile]);
 
   // 앱 시작 시 localStorage에서 복원
   useEffect(() => {
@@ -163,7 +177,7 @@ const TableProvider = ({ children }) => {
     setTableData(prevTable =>
       prevTable.map((r, idx) =>
         idx === selectedIndex
-          ? { ...r, 검토내용: Array.isArray(docs) ? docs : [docs] }
+          ? { ...r, 검토사항: Array.isArray(docs) ? docs : [docs] }
           : r
       )
     );
@@ -204,6 +218,8 @@ const TableProvider = ({ children }) => {
         handleCheckedDocumentsChange,
         handleMemoChange,
         handleNoteChange,
+        tableLoading,
+        setTableLoading,
       }}
     >
       {children}

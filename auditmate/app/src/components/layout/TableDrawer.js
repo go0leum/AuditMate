@@ -20,6 +20,7 @@ const Overlay = styled.div`
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.2);
+  z-index: 200;
 `;
 
 const Container = styled.div`
@@ -34,7 +35,7 @@ const SidebarWrapper = styled.div`
   bottom: 0;
   right: 0;
   color: #202020;
-  z-index: 99;
+  z-index: 200;
   width: ${({ width }) => width}px;
   transform: ${({ $isOpen }) =>
     $isOpen ? 'translateX(0)' : 'translateX(100%)'};
@@ -72,6 +73,30 @@ const BottonSection = styled.div`
   gap: 20px;
 `;
 
+const Title = styled.div`
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #0647A9;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  word-wrap: break-word;
+`;
+
+const Label = styled.div`
+  width: 600px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: black;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  word-wrap: break-word;
+`;
+
 const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose, sortedData }) => {
   const { sideRef } = useContext(DrawerContext);
   const { selectedXlsxFile, tableData, handleMemoChange, handleNoteChange } = useContext(TableContext);
@@ -88,7 +113,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
   };
 
   const [checkedDocuments, setCheckedDocuments] = useState(
-    toDocArray(tableData[initialIndex]?.['검토내용'])
+    toDocArray(tableData[initialIndex]?.['검토사항'])
   );
 
   useEffect(() => {
@@ -98,7 +123,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
   // selectedIndex(행 이동)될 때만 checkedDocuments를 첫 번째로 초기화
   useEffect(() => {
     const row = tableData[selectedIndex];
-    setCheckedDocuments(toDocArray(row?.['검토내용']));
+    setCheckedDocuments(toDocArray(row?.['검토사항']));
   }, [selectedIndex, tableData]); // tableData 추가
 
   // useCallback으로 감싸기
@@ -145,16 +170,12 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
   const noteInputRef = useRef(null);
 
   useEffect(() => {
-    if (!open) return;
     const handleKeyDown = (e) => {
       if (
         document.activeElement.tagName === 'INPUT' ||
         document.activeElement.tagName === 'TEXTAREA'
       ) {
         return;
-      }
-      if (e.key === 'e' || e.key === 'E') {
-        onClose?.();
       }
       if (e.key === 'ArrowLeft' || e.key === '.') {
         handlePrev();
@@ -165,7 +186,8 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
       if (
         e.key.length === 1 &&
         !e.ctrlKey && !e.altKey && !e.metaKey &&
-        !/[0-9`~!@#$%^&*()_\-+={}\[\]|\\:;"'<>,.?/]/.test(e.key)
+        // 불필요한 \ 제거
+        !/[0-9`~!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/]/.test(e.key)
       ) {
         e.preventDefault();
         memoInputRef.current?.focus();
@@ -175,8 +197,13 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
         noteInputRef.current?.focus();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    if (open) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [open, onClose, handlePrev, handleNext]);
 
   const row = sortedData[selectedIndex];
@@ -233,6 +260,18 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
                   selectedIndex={selectedIndex}
                   checkedDocuments={checkedDocuments}
                 />
+                <Section>
+                  <Title>취소사유</Title>
+                  <Label> 
+                    {row['취소사유'] ?? '-'}
+                  </Label>
+                </Section>
+                <Section>
+                  <Title>답변</Title>
+                  <Label>
+                    {row['답변'] ?? '-'}
+                  </Label>
+                </Section>
                 <Section>
                   <MemoInput
                     label="메모"

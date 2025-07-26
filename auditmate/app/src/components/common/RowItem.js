@@ -8,9 +8,10 @@ const RowItemStyle = styled.div`
   flex-direction: column;
   color: #292D32;
   font-size: 13px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
+  align-items: center;
 
   ${({ $clickable }) =>
     $clickable &&

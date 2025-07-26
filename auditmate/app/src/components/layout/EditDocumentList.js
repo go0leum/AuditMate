@@ -17,7 +17,7 @@ const Label = styled.div`
   justify-content: center;
   color: black;
   font-size: 14px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
 `;
@@ -25,7 +25,7 @@ const Label = styled.div`
 const ButtonText = styled.div`
   color: ${({ $active }) => ($active ? 'white' : 'black')};
   font-size: 14px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
   display: flex;
@@ -39,7 +39,7 @@ const SubTitle = styled.div`
   justify-content: center;
   color: #0647A9;           // 원하는 색상으로 변경
   font-size: 14px;          // 원하는 크기로 변경
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
   word-wrap: break-word;
 `;
@@ -189,7 +189,7 @@ const EditDocumentList = ({
                                 border: "none",
                                 outline: "none",
                                 fontSize: 14,
-                                fontFamily: 'NanumGothic',
+                                fontFamily: 'Inter',
                                 backgroundColor: "#EEEEEE",
                                 fontWeight: 600
                               }}

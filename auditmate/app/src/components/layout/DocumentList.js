@@ -28,7 +28,7 @@ const Title = styled.div`
   justify-content: center;
   color: #0647A9;
   font-size: 16px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
 `;
@@ -38,9 +38,9 @@ const SubTitle = styled.div`
   flex-direction: column;
   justify-content: center;
   color: #0647A9;
-  font-size: 14px;
-  font-family: 'NanumGothic', sans-serif;
-  font-weight: 500;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
   word-wrap: break-word;
 `;
 
@@ -67,7 +67,7 @@ const Label = styled.div`
   justify-content: center;
   color: black;
   font-size: 14px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
 `;
@@ -89,7 +89,7 @@ const ButtonText = styled.div`
   color: ${({ $active }) => ($active ? 'white' : 'black')};
   font-size: 14px;
   padding: 17px 15px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
   display: flex;
@@ -184,9 +184,9 @@ const DocumentList = ({ category, proof, selectedIndex, checkedDocuments }) => {
 
   return (
     <Wrapper>
-      <Title>검토 문서 리스트</Title>
+      <Title>검토 사항</Title>
       <Section>
-        <SubTitle>세목별 서류: {category}</SubTitle>
+        <SubTitle>세목: {category}</SubTitle>
         {Object.entries(documentSections).map(([phase, docs]) => (
           <React.Fragment key={phase}>
             {chunkArray(docs, 3).map((docGroup, rowIndex) => (
@@ -208,7 +208,7 @@ const DocumentList = ({ category, proof, selectedIndex, checkedDocuments }) => {
             ))}
           </React.Fragment>
         ))}
-        <SubTitle>증빙구분별 서류: {proof}</SubTitle>
+        <SubTitle>증빙구분: {proof}</SubTitle>
         {Object.entries(proofSections).map(([proofType, docs]) => (
           <React.Fragment key={proofType}>
             {chunkArray(docs, 3).map((docGroup, rowIndex) => (

@@ -1,4 +1,5 @@
 import { useContext, useState } from "react";
+import styled from "styled-components";
 
 import { FileContext } from "../context/FileContext";
 import { RuleContext } from "../context/RuleContext"; // 추가
@@ -13,6 +14,13 @@ import RowContainer from "../components/layout/RowContainer";
 import RowItem from "../components/common/RowItem";
 import Button from "../components/common/Button";
 import RuleDrawer from "../components/layout/RuleDrawer"; // RuleDrawer import
+
+const Line = styled.div`
+  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
+  height: 0px;
+  outline: 1px solid #EEEEEE;
+  outline-offset: -0.5px;
+`;
 
 const RuleList = () => {
   const { ruleData, handleCheckboxChange, handleCheckExport, selectedRules, handleCheckDelete } = useContext(FileContext);
@@ -36,6 +44,17 @@ const RuleList = () => {
     { label: '파일이름 내림차순', value: 'name-dsc' },
   ];
 
+  // 컬럼 클릭 시 정렬 상태 토글
+  const handleColumnClick = (label) => {
+    if (label === '선택') return;
+    if (sortValue === `${label}-asc`) {
+      setSortValue(`${label}-dsc`);
+    } else {
+      setSortValue(`${label}-asc`);
+    }
+  };
+
+  // getSortedData에서 sortValue를 컬럼명-asc/dsc로 처리
   const getSortedData = (data, sortKey) => {
     const sorted = [...data];
     switch (sortKey) {
@@ -76,48 +95,55 @@ const RuleList = () => {
   return (
     <BaseContainer direction="row">
       <SideBar/>
-      <BaseContainer direction="column">
-        <TopBar Title='Recent Files' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
+      <UploadRuleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
+      <BaseContainer direction="column" $padding={false}>
+        <TopBar Title='Rule List' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
-          <UploadRuleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
           <Button onClick={() => handleCheckExport("rule")} secondary>Export</Button>
           <Button onClick={() => handleCheckDelete("rule")} danger>Delete</Button>
         </div>
-        <Table columns={columns}>
+        <Table
+          columns={columns}
+          onColumnClick={handleColumnClick}
+          sortValue={sortValue}
+        >
           {sortedData.length > 0 ? (
             sortedData.map((rule, index) => (
-              <RowContainer key={index}>
-                <RowItem width={100}>
-                  <input
-                    type="checkbox"
-                    checked={(selectedRules || []).some(r => r.folderName === rule.folderName)}
-                    onChange={() => handleCheckboxChange("rule", rule)}
-                  />
-                </RowItem>
-                <RowItem
-                  width={250}
-                  $clickable
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => openRuleDrawer(rule)} // 클릭 시 Drawer 오픈
-                >
-                  {rule.folderName}
-                </RowItem>
-                <RowItem width={250}>{rule.uploadTime}</RowItem>
-              </RowContainer>
+              <>
+                <RowContainer key={index}>
+                  <RowItem width={100}>
+                    <input
+                      type="checkbox"
+                      checked={(selectedRules || []).some(r => r.folderName === rule.folderName)}
+                      onChange={() => handleCheckboxChange("rule", rule)}
+                    />
+                  </RowItem>
+                  <RowItem
+                    width={250}
+                    $clickable
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => openRuleDrawer(rule)} // 클릭 시 Drawer 오픈
+                  >
+                    {rule.folderName}
+                  </RowItem>
+                  <RowItem width={250}>{rule.uploadTime}</RowItem>
+                </RowContainer>
+                <Line />
+              </>
             ))
           ) : (
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
           )}
         </Table>
-        {sortedData.length > 0 && (
-          <RuleDrawer 
-            open={ruleDrawerOpen} 
-            onClose={handleDrawerClose} 
-            width={750}
-          />
-        )}
       </BaseContainer>
+      {sortedData.length > 0 && (
+        <RuleDrawer 
+          open={ruleDrawerOpen} 
+          onClose={handleDrawerClose} 
+          width={750}
+        />
+      )}
     </BaseContainer>
   );
 };

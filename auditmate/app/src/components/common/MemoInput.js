@@ -14,7 +14,7 @@ const TextareaContainer = styled.div`
 const Label = styled.div`
   color: #0647A9;
   font-size: 16px;
-  font-family: 'NanumGothic';
+  font-family: 'Inter';
   font-weight: 600;
 `;
 

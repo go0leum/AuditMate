@@ -27,7 +27,7 @@ const ColumnItem = styled.div`
   flex-direction: column;
   color: #0647A9;
   font-size: 15px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
 `;
@@ -39,13 +39,28 @@ const Line = styled.div`
   outline-offset: -0.5px;
 `;
 
-const Table = ({ columns, children, columnPadding, width }) => {
+const Table = ({ columns, children, columnPadding, width, onColumnClick, sortValue }) => {
+  // sortValue: '컬럼명-asc' 또는 '컬럼명-desc'
+  const getSortIcon = (label) => {
+    if (!sortValue) return null;
+    if (sortValue.startsWith(label + '-')) {
+      return sortValue.endsWith('-asc') ? ' ▼' : ' ▲';
+    }
+    return null;
+  };
+
   return (
     <Container>
       <ColumnContainer $width={width} $padding={columnPadding}>
         {columns.map(({ label, width }, index) => (
-          <ColumnItem key={index} $width={width}>
+          <ColumnItem
+            key={index}
+            $width={width}
+            style={{ cursor: onColumnClick ? 'pointer' : 'default' }}
+            onClick={onColumnClick ? () => onColumnClick(label) : undefined}
+          >
             {label}
+            {getSortIcon(label)}
           </ColumnItem>
         ))}
       </ColumnContainer>

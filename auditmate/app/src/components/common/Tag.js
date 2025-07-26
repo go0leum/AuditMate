@@ -2,6 +2,7 @@ import styled from 'styled-components';
 
 const TagWrapper = styled.div`
   padding: 2px 8px;
+  width: fit-content;
   border-radius: 50px;
   outline-offset: -1px;
   display: inline-flex;
@@ -14,7 +15,7 @@ const TagWrapper = styled.div`
 
 const TagText = styled.div`
   font-size: 13px;
-  font-family: 'NanumGothic, sans-serif';
+  font-family: 'Inter, sans-serif';
   font-weight: 600;
   line-height: 16px;
   word-wrap: break-word;

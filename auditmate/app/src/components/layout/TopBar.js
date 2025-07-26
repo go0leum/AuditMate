@@ -4,7 +4,7 @@ import SearchBox from '../common/SearchBox';
 
 const Container = styled.div`
   width: calc(100% - 60px);
-  height: 110px;
+  height: 80px;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -13,8 +13,8 @@ const Container = styled.div`
 `;
 
 const Title = styled.div`
-  width: 214.57px;
-  height: 36.58px;
+  width: 200x;
+  height: 35px;
   color: black;
   font-size: 24px;
   font-family: 'Poppins, sans-serif';

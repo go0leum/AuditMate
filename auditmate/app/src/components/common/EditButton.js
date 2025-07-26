@@ -23,7 +23,7 @@ const EditIcon = styled.div`
   text-align: center;
   color: ${({ color }) => color || "black"};
   font-size: 20px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   user-select: none;
   cursor: pointer;

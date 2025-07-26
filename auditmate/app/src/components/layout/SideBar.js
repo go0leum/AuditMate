@@ -4,16 +4,21 @@ import IconButton from '../common/IconButton';
 import BrandLogo from '../../assets/icon/XWrist.jpg';
 import FolderIcon from '../../assets/icon/folder icon.png';
 import DocumentIcon from '../../assets/icon/document icon.png';
+// import EmailIcon from '../../assets/icon/email icon.png';
 
 const SidebarContainer = styled.div`
-  padding: 36px 24px;
-  width: 95px;
+  position: fixed; // 추가: 사이드바를 화면에 고정
+  top: 0;          // 상단에 고정
+  left: 0;         // 좌측에 고정
+  z-index: 100;    // 다른 요소 위에 표시(필요시)
+  padding: 20px 15px;
+  width: 60px;
   height: 100vh;
   background: #FAFBFF;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 100px;
+  gap: 70px;
 `;
 
 const LogoContainer = styled.div`
@@ -49,6 +54,7 @@ const Sidebar = () => {
       <MenuList>
         <IconButton iconSrc={FolderIcon} path='/recentFile' tooltip="파일 목록"/>
         <IconButton iconSrc={DocumentIcon} path='/ruleList' tooltip="검토 규칙 목록"/>
+        {/* <IconButton iconSrc={EmailIcon} path='/contactInfo' tooltip="연락처 정보"/> */}
       </MenuList>
     </SidebarContainer>
   );

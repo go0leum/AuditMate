@@ -16,6 +16,7 @@ const Overlay = styled.div`
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.2);
+  z-index: 200;
 `;
 
 const Container = styled.div`
@@ -31,7 +32,7 @@ const SidebarWrapper = styled.div`
   right: 0;
   color: #202020;
   height: 100%;
-  z-index: 99;
+  z-index: 200;
   width: ${({ width }) => width || 750}px;
   transform: ${({ $isOpen }) =>
     $isOpen ? 'translateX(0)' : 'translateX(100%)'};
@@ -65,7 +66,7 @@ const Title = styled.div`
   justify-content: center;
   color: #0647A9;
   font-size: 16px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   word-wrap: break-word;
 `;

@@ -20,7 +20,7 @@ const TableDrawerProvider = ({ children }) => {
     { label: '거래처명', width: 80 },
     { label: '예금주명', width: 80 },
     { label: '집행금액', width: 80 },
-    { label: '검토내용', width: 150 },
+    { label: '검토사항', width: 150 },
     { label: '메모', width: 150 },
     { label: '보완사항', width: 150 },
   ];

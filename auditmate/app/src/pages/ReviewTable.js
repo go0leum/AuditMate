@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from 'react';
+import { useEffect, useContext, useState } from 'react';
 import styled from 'styled-components';
 
 import { TableContext } from '../context/TableContext';
@@ -22,13 +22,26 @@ const Line = styled.div`
   outline-offset: -0.5px;
 `;
 
+const TEXT_COLUMNS = [
+  '비고', '집행용도', '취소사유', '검토사항', '메모', '보완사항', '답변',
+  '세금계산서 발행 여부', '내부규정 부합 여부', '중복 집행 여부', '감사 메모', '감사 소견', '지출 사유 요약', '반려 사유'
+];
+const NUMBER_COLUMNS = [
+  '교부액', '실집행액', '최종교부액', '초과집행액', '공급가액(A)', '부가세(B)', '집행취소(C)', '집행금액(A+B)-C',
+  '예산잔액', '단가 (이내)', '법인카드 번호', '계좌번호'
+];
+const DATE_COLUMNS = ['집행실행일자', '회계연도', '업로드 일시'];
+const CODE_COLUMNS = [
+  '항목명', '세부항목명', '증빙번호', '준수 여부', '기준', '증빙'
+];
+
 const ReviewTable = () => {
-  const { tableData, handleExport, fetchExcelData, selectedXlsxFile } = useContext(TableContext);
+  const { tableData, handleExport, fetchExcelData, selectedXlsxFile, tableLoading } = useContext(TableContext);
   const { selectedCategoryRule, selectedDocumentRule, ruleLoading } = useContext(RuleContext);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [TableDrawerOpen, setTableDrawerOpen] = useState(false);
-  const [sortValue, setSortValue] = useState('original');
+  const [sortValue, setSortValue] = useState('N-asc');
   const [drawerIndex, setDrawerIndex] = useState(0);
 
   const data = tableData.map((row, idx) => ({ ...row, _originalIndex: idx }));
@@ -44,107 +57,119 @@ const ReviewTable = () => {
     fetchExcelData(); // 서버에서 새로고침
   };
 
-  const options = [
-    { label: '기본 순서', value: 'original' },
-    { label: '집행일자 오름차순', value: 'date-asc' },
-    { label: '집행일자 내림차순', value: 'date-desc' },
-    { label: '집행용도 오름차순', value: 'use-asc' },
-    { label: '집행용도 내림차순', value: 'use-desc' },
-    { label: '세목명 오름차순', value: 'category-asc' },
-    { label: '세목명 내림차순', value: 'category-desc' },
-    { label: '거래처명 오름차순', value: 'correspondant-asc' },
-    { label: '거래처명 내림차순', value: 'correspondant-desc' },
-    { label: '예금주명 오름차순', value: 'depositor-asc' },
-    { label: '예금주명 내림차순', value: 'depositor-desc' },
+  // drawer가 열릴 때 body 스크롤 막기
+  useEffect(() => {
+    if (TableDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [TableDrawerOpen]);
+
+  // 필터 옵션 정의
+  const filterOptions = [
+    { label: '전체', value: 'all' },
+    { label: '답변 값 있음', value: 'answer' },
+    { label: '보완사항 값 있음', value: 'note' },
+    { label: '취소사유 값 있음', value: 'cancel' },
+    { label: '메모 값 있음', value: 'memo' },
   ];
 
-  const columns = [
-    { label: '집행실행일자', width: 90 },
-    { label: '증빙구분', width: 105 },
-    { label: '집행용도', width: 80 },
-    { label: '비목명', width: 80 },
-    { label: '세목명', width: 105 },
-    { label: '거래처명', width: 80 },
-    { label: '예금주명', width: 80 },
-    { label: '집행금액', width: 80 },
-    { label: '검토내용', width: 150 },
-    { label: '메모', width: 150 },
-    { label: '보완사항', width: 150 },
-  ];
+  const [filterValue, setFilterValue] = useState('all');
 
-  const getSortedData = (data, sortKey) => {
-    const sorted = [...data];
-    switch (sortKey) {
-      case 'original':
-        return sorted.sort((a, b) => a._originalIndex - b._originalIndex);
-      case 'date-asc':
-        return sorted.sort((a, b) => (a['집행실행일자'] || '').localeCompare(b['집행실행일자'] || ''));
-      case 'date-dsc':
-        return sorted.sort((a, b) => (b['집행실행일자'] || '').localeCompare(a['집행실행일자'] || ''));
-      case 'use-asc':
-        return sorted.sort((a, b) => (a['집행용도'] || '').localeCompare(b['집행용도'] || ''));
-      case 'use-dsc':
-        return sorted.sort((a, b) => (b['집행용도'] || '').localeCompare(a['집행용도'] || ''));
-      case 'category-asc':
-        return sorted.sort((a, b) => (a['세목명'] || '').localeCompare(b['세목명'] || ''));
-      case 'category-dsc':
-        return sorted.sort((a, b) => (b['세목명'] || '').localeCompare(a['세목명'] || ''));
-      case 'correspondant-asc':
-        return sorted.sort((a, b) => (a['거래처명'] || '').localeCompare(b['거래처명'] || ''));
-      case 'correspondant-desc':
-        return sorted.sort((a, b) => (b['거래처명'] || '').localeCompare(a['거래처명'] || ''));
-      case 'depositor-asc':
-        return sorted.sort((a, b) => (a['예금주명'] || '').localeCompare(b['예금주명'] || ''));
-      case 'depositor-desc':
-        return sorted.sort((a, b) => (b['예금주명'] || '').localeCompare(a['예금주명'] || ''));
-      default:
-        return sorted;
+  const columns = tableData.length > 0
+    ? Object.keys(tableData[0])
+        .filter(label => label !== '_originalIndex') // 인덱스 제외
+        .map(label => ({
+          label,
+          width:
+            label === 'N'
+              ? 50
+              : TEXT_COLUMNS.includes(label)
+                ? 200
+                : 110 // 기본값(숫자, 날짜, 코드 등)
+        }))
+    : [];
+
+  // 컬럼 클릭 시 정렬 상태 토글
+  const handleColumnClick = (label) => {
+    if (sortValue === `${label}-asc`) {
+      setSortValue(`${label}-desc`);
+    } else {
+      setSortValue(`${label}-asc`);
     }
   };
 
-  const filteredData = searchTerm.trim()
-    ? data
-        .filter((row) =>
-          Object.values(row).some(
-            (value) =>
-              typeof value === 'string' &&
-              value.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+  // getSortedData에서 sortValue를 컬럼명-asc/desc로 처리
+  const getSortedData = (data, sortKey) => {
+    const sorted = [...data];
+    if (sortKey === 'original') {
+      return sorted.sort((a, b) => a._originalIndex - b._originalIndex);
+    }
+    // sortKey 예: '집행금액-asc', '집행금액-desc'
+    const [col, dir] = sortKey.split('-');
+    if (!col || !dir) return sorted;
+    return sorted.sort((a, b) => {
+      const aVal = a[col] ?? '';
+      const bVal = b[col] ?? '';
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return dir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return dir === 'asc'
+        ? (aVal + '').localeCompare(bVal + '')
+        : (bVal + '').localeCompare(aVal + '');
+    });
+  };
+
+  // 필터링 적용
+  const filteredData = data.filter(row => {
+    console.log('filterValue:', filterValue);
+    if (filterValue === 'all') return true;
+    if (filterValue === 'answer') {
+      const v = row['답변'];
+      return typeof v === 'string' && v.replace(/[-\s]/g, '').length > 0;
+    }
+    if (filterValue === 'note') {
+      const v = row['보완사항'];
+      return typeof v === 'string' && v.replace(/[-\s]/g, '').length > 0;
+    }
+    if (filterValue === 'cancel') {
+      const v = row['취소사유'];
+      return typeof v === 'string' && v.replace(/[-\s]/g, '').length > 0;
+    }
+    if (filterValue === 'memo') {
+      const v = row['메모'];
+      return typeof v === 'string' && v.replace(/[-\s]/g, '').length > 0;
+    }
+    return true;
+  }).filter(row =>
+    searchTerm.trim()
+      ? Object.values(row).some(
+          (value) =>
+            typeof value === 'string' &&
+            value.toLowerCase().includes(searchTerm.toLowerCase())
         )
-    : data;
+      : true
+  );
 
   const sortedData = getSortedData(filteredData, sortValue);
-
-  // d키를 누르면 TableDrawer 열기
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // 입력창에 포커스가 없을 때만 동작 (원하면 제거)
-      if (
-        document.activeElement.tagName === 'INPUT' ||
-        document.activeElement.tagName === 'TEXTAREA'
-      ) {
-        return;
-      }
-      if (e.key === 'e' || e.key === 'E') {
-        setTableDrawerOpen(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // --- 데이터 준비 전에는 안내문만 출력 ---
   if (
     ruleLoading ||
+    tableLoading ||
     !selectedXlsxFile ||
     !selectedCategoryRule ||
     !selectedDocumentRule
   ) {
     return (
-      <BaseContainer direction="row">
+      <BaseContainer direction="row" >
         <SideBar />
-        <BaseContainer direction="column">
-          <TopBar Title="Review Table" options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
+        <BaseContainer direction="column" $padding={false}>
+          <TopBar Title="Review Table" options={filterOptions} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
           <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <Button onClick={() => handleExport} secondary>Export</Button>
           </div>
@@ -159,14 +184,28 @@ const ReviewTable = () => {
   return (
     <BaseContainer direction="row">
       <SideBar />
-      <BaseContainer direction="column">
-        <TopBar Title="Review Table" options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
+      <BaseContainer direction="column" $width='auto' $padding={false}>
+        <TopBar
+          Title="Review Table"
+          // options={options} → filterOptions로 교체
+          options={filterOptions}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          // sortValue, onSortChange 제거
+          filterValue={filterValue}
+          onFilterChange={setFilterValue}
+        />
         {data.length === 0 ? (
           <Table columns={columns} width="calc(100% - 60px)">
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
           </Table>
         ) : (
-          <Table columns={columns} width="calc(100% - 60px)">
+          <Table
+            columns={columns}
+            width="calc(100% - 60px)"
+            onColumnClick={handleColumnClick}
+            sortValue={sortValue}
+          >
             {sortedData.length === 0 ? (
               <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
             ) : !selectedCategoryRule ? (
@@ -180,7 +219,7 @@ const ReviewTable = () => {
                     {columns.map((column, colIndex) => {
                       const value = row[column.label];
 
-                      if (column.label === '집행금액' && typeof value === 'number') {
+                      if (typeof value === 'number') {
                         return (
                           <RowItem key={colIndex} width={column.width} >
                             {value.toLocaleString()}
@@ -197,7 +236,7 @@ const ReviewTable = () => {
                             </Tag>
                           </RowItem>
                         );
-                      } else if (column.label === '검토내용') {
+                      } else if (column.label === '검토사항') {
                         return (
                           <RowItem key={colIndex} width={column.width}>
                             {Array.isArray(value)
@@ -207,12 +246,10 @@ const ReviewTable = () => {
                                 : (value ?? '-')}
                           </RowItem>
                         );
-                      } else if (column.label === '메모' || column.label === '보완사항' || column.label === '검토내용') {
+                      } else if (column.label === '메모' || column.label === '보완사항' || column.label === '검토사항') {
                         return (
                           <RowItem key={colIndex} width={column.width}>
-                            {(value && typeof value === 'string')
-                              ? (value.length > 20 ? value.slice(0, 20) + '…' : value)
-                              : (value ?? '-')}
+                            {value ?? '-'}
                           </RowItem>
                         );
                       } else {
@@ -230,17 +267,17 @@ const ReviewTable = () => {
             )}
           </Table>
         )}
-        {sortedData.length > 0 && (
-          <TableDrawer
-            open={TableDrawerOpen}
-            onClose={handleDrawerClose}
-            width={750}
-            indexes={sortedData.map((_, idx) => idx)} // [0, 1, 2, ...]
-            initialIndex={drawerIndex}
-            sortedData={sortedData}
-          />
-        )}
       </BaseContainer>
+      {sortedData.length > 0 && (
+        <TableDrawer
+          open={TableDrawerOpen}
+          onClose={handleDrawerClose}
+          width={750}
+          indexes={sortedData.map((_, idx) => idx)} // [0, 1, 2, ...]
+          initialIndex={drawerIndex}
+          sortedData={sortedData}
+        />
+      )}
     </BaseContainer>
   );
 };

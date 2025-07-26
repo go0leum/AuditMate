@@ -26,7 +26,7 @@ const SummaryBox = styled.div`
   border-radius: 4px;
   background: #f9f9f9;
   color: #333;
-  font-family: 'NanumGothic';
+  font-family: 'Inter';
   font-size: 14px;
   box-sizing: border-box;
   overflow-x: auto;
@@ -39,7 +39,7 @@ const Title = styled.div`
   justify-content: center;
   color: #0647A9;
   font-size: 16px;
-  font-family: 'NanumGothic', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
 `;
 

@@ -12,7 +12,7 @@ const InputWrapper = styled.div`
 const Label = styled.label`
   color: #3F3F3F;
   font-size: 14px;
-  font-family: 'NanumGothic';
+  font-family: 'Inter';
   font-weight: 600;
   line-height: 24px;
 `;
