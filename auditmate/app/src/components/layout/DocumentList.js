@@ -60,20 +60,8 @@ const Row = styled.div`
   gap: 10px;
 `;
 
-const Label = styled.div`
-  width: 100px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  color: black;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  word-wrap: break-word;
-`;
-
 const Button = styled.div`
-  width: 150px;
+  width: 160px;
   height: 40px;
   border-radius: 4px;
   outline: 1px solid #7E7E7E;
@@ -186,48 +174,21 @@ const DocumentList = ({ category, proof, selectedIndex, checkedDocuments }) => {
     <Wrapper>
       <Title>검토 사항</Title>
       <Section>
-        <SubTitle>세목: {category}</SubTitle>
-        {Object.entries(documentSections).map(([phase, docs]) => (
-          <React.Fragment key={phase}>
-            {chunkArray(docs, 3).map((docGroup, rowIndex) => (
-              <Row key={`${phase}-${rowIndex}`}>
-                {rowIndex === 0 && <Label>{phase}</Label>}
-                {rowIndex > 0 && <Label>{''}</Label>}
-                {docGroup.map(doc => (
-                  <Button
-                    key={doc}
-                    $active={checkedDocuments.includes(doc)}
-                    onClick={() => handleClick(doc)}
-                  >
-                    <ButtonText $active={checkedDocuments.includes(doc)}>
-                      {`${++docIdx}. ${doc}`}
-                    </ButtonText>
-                  </Button>
-                ))}
-              </Row>
+        <SubTitle>세목: {category} / 증빙구분: {proof}</SubTitle>
+        {chunkArray(docList, 4).map((docGroup, rowIndex) => (
+          <Row key={`${rowIndex}`}>
+            {docGroup.map(doc => (
+              <Button
+                key={doc}
+                $active={checkedDocuments.includes(doc)}
+                onClick={() => handleClick(doc)}
+              >
+                <ButtonText $active={checkedDocuments.includes(doc)}>
+                  {`${++docIdx}. ${doc}`}
+                </ButtonText>
+              </Button>
             ))}
-          </React.Fragment>
-        ))}
-        <SubTitle>증빙구분: {proof}</SubTitle>
-        {Object.entries(proofSections).map(([proofType, docs]) => (
-          <React.Fragment key={proofType}>
-            {chunkArray(docs, 3).map((docGroup, rowIndex) => (
-              <Row key={`${proofType}-${rowIndex}`}>
-                {rowIndex === 0 && <Label>{proofType}</Label>}
-                {docGroup.map(doc => (
-                  <Button
-                    key={doc}
-                    $active={checkedDocuments.includes(doc)}
-                    onClick={() => handleClick(doc)}
-                  >
-                    <ButtonText $active={checkedDocuments.includes(doc)}>
-                      {`${++docIdx}. ${doc}`}
-                    </ButtonText>
-                  </Button>
-                ))}
-              </Row>
-            ))}
-          </React.Fragment>
+          </Row>
         ))}
       </Section>
     </Wrapper>

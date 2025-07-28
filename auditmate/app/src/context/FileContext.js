@@ -9,7 +9,6 @@ const FileProvider = ({ children }) => {
   const [excelFile, setExcelFile] = useState(null);
   const [ruleName, setRuleName] = useState(null);
   const [documentRule, setDocumentRule] = useState(null);
-  const [categoryRule, setCategoryRule] = useState(null);
   const [ruleData, setRuleData] = useState([]);
   const [fileData, setFileData] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -174,13 +173,12 @@ const FileProvider = ({ children }) => {
         return;
       }
     } else if (type === "rule") {
-      if (ruleName && documentRule && categoryRule) {
+      if (ruleName && documentRule) {
         formData.append("rule_name", ruleName);
         formData.append("document_rule", documentRule);
-        formData.append("category_rule", categoryRule);
-        uploadUrl = "http://localhost:8000/api/rule_upload/";
+        uploadUrl = "http://localhost:8000/api/upload_rules/";
       } else {
-        alert("규칙 이름과 검토 자료 규칙, 증빙 구분 & 세목명 규칙을 입력하세요.");
+        alert("규칙 이름과 검토 자료 규칙을 입력하세요.");
         return;
       }
     } else {
@@ -196,26 +194,31 @@ const FileProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok && data.status !== "error") {
-        // 업로드 성공 후 read_xlsx로 실제 데이터 읽기 검증
-        const folderName = data.metadata.folderName;
-        const xlsxFile = data.metadata.xlsxFile;
-        const readRes = await fetch("http://localhost:8000/api/read-xlsx/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ folderName, xlsxFile }),
-        });
-        const readData = await readRes.json();
-
-        if (readRes.ok && readData.status === "success") {
-          alert("파일 업로드 성공!");
-          await fetchFileData();
-        } else {
-          // 업로드된 파일 삭제
-          await fetch(`http://localhost:8000/api/delete_file/${folderName}/`, {
-            method: "DELETE",
+        if (type === "file") {
+          // 파일 업로드 성공 후 read_xlsx로 실제 데이터 읽기 검증
+          const folderName = data.metadata.folderName;
+          const xlsxFile = data.metadata.xlsxFile;
+          const readRes = await fetch("http://localhost:8000/api/read-xlsx/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ folderName, xlsxFile }),
           });
-          alert("엑셀 파일을 읽을 수 없습니다. 정렬/필터를 해제하고 다시 업로드 해주세요.");
-          await fetchFileData(); // 목록 갱신
+          const readData = await readRes.json();
+
+          if (readRes.ok && readData.status === "success") {
+            alert("파일 업로드 성공!");
+            await fetchFileData();
+          } else {
+            // 업로드된 파일 삭제
+            await fetch(`http://localhost:8000/api/delete_file/${folderName}/`, {
+              method: "DELETE",
+            });
+            alert("엑셀 파일을 읽을 수 없습니다. 정렬/필터를 해제하고 다시 업로드 해주세요.");
+            await fetchFileData(); // 목록 갱신
+          }
+        } else if (type === "rule") {
+          alert("규칙 업로드 성공!");
+          await fetchRuleData();
         }
       } else {
         alert("파일 업로드 실패!");
@@ -293,14 +296,12 @@ const FileProvider = ({ children }) => {
         ruleData,
         excelFile,
         documentRule,
-        categoryRule,
         handleCheckboxChange,
         handleCheckExport,
         selectedFiles,
         selectedRules,
         setExcelFile,
         setDocumentRule,
-        setCategoryRule,
         setRuleName,
         setRuleData,
         handleUpload,

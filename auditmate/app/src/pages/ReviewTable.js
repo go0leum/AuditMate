@@ -1,5 +1,4 @@
 import { useEffect, useContext, useState } from 'react';
-import styled from 'styled-components';
 
 import { TableContext } from '../context/TableContext';
 
@@ -14,13 +13,6 @@ import Button from '../components/common/Button';
 import { RuleContext } from '../context/RuleContext';
 import RowContainer from '../components/layout/RowContainer';
 import RowItem from '../components/common/RowItem';
-
-const Line = styled.div`
-  width: ${({ $width }) => $width || 'calc(100% - 60px)'};
-  height: 0px;
-  outline: 1px solid #EEEEEE;
-  outline-offset: -0.5px;
-`;
 
 const TEXT_COLUMNS = [
   '비고', '집행용도', '취소사유', '검토사항', '메모', '보완사항', '답변',
@@ -126,7 +118,6 @@ const ReviewTable = () => {
 
   // 필터링 적용
   const filteredData = data.filter(row => {
-    console.log('filterValue:', filterValue);
     if (filterValue === 'all') return true;
     if (filterValue === 'answer') {
       const v = row['답변'];
@@ -156,6 +147,7 @@ const ReviewTable = () => {
   );
 
   const sortedData = getSortedData(filteredData, sortValue);
+  const minWidth = columns.reduce((sum, col) => sum + (col.width || 110), 0) + 'px';
 
   // --- 데이터 준비 전에는 안내문만 출력 ---
   if (
@@ -168,12 +160,12 @@ const ReviewTable = () => {
     return (
       <BaseContainer direction="row" >
         <SideBar />
+        <TopBar Title="Review Table" options={filterOptions} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <BaseContainer direction="column" $padding={false}>
-          <TopBar Title="Review Table" options={filterOptions} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
           <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <Button onClick={() => handleExport} secondary>Export</Button>
           </div>
-          <Table columns={columns} width="calc(100% - 60px)">
+          <Table columns={columns} width="100%">
             <div style={{ padding: '20px', color: '#888' }}>로딩 중입니다...</div>
           </Table>
         </BaseContainer>
@@ -184,25 +176,22 @@ const ReviewTable = () => {
   return (
     <BaseContainer direction="row">
       <SideBar />
-      <BaseContainer direction="column" $width='auto' $padding={false}>
-        <TopBar
+      <TopBar
           Title="Review Table"
-          // options={options} → filterOptions로 교체
           options={filterOptions}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          // sortValue, onSortChange 제거
           filterValue={filterValue}
           onFilterChange={setFilterValue}
         />
+      <BaseContainer direction="column" width="auto" $padding={false}>
         {data.length === 0 ? (
-          <Table columns={columns} width="calc(100% - 60px)">
+          <Table columns={columns}>
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
           </Table>
         ) : (
           <Table
             columns={columns}
-            width="calc(100% - 60px)"
             onColumnClick={handleColumnClick}
             sortValue={sortValue}
           >
@@ -214,8 +203,8 @@ const ReviewTable = () => {
               </div>
             ) : (
               sortedData.map((row, index) => (
-                <div key={index} style={{ width: '100%', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
-                  <RowContainer onClick={() => openTableDrawer(index)} width="calc(100% - 60px)">
+                <div key={index} style={{ width: '100%', flexDirection: 'column' }}>
+                  <RowContainer minWidth={minWidth} onClick={() => openTableDrawer(index)}>
                     {columns.map((column, colIndex) => {
                       const value = row[column.label];
 
@@ -261,7 +250,6 @@ const ReviewTable = () => {
                       }
                     })}
                   </RowContainer>
-                  <Line />
                 </div>
               ))
             )}

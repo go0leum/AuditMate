@@ -381,31 +381,19 @@ def upload_rules(request):
         os.makedirs(rule_dir, exist_ok=True)
 
         metadata = {
-            "folderName": upload_time,
-            "ruleName": None,
-            "documentRule": None,
-            "categoryRule": None,
+            "folderName": rule_name,
+            "ruleName": rule_name,
+            "newformat": None,
             "uploadTime": upload_time,
         }
 
         fs = FileSystemStorage(location=rule_dir)
 
-        # 규칙 이름
-        if rule_name:
-            metadata["ruleName"] = rule_name
-            metadata["folderName"] = rule_name
-
-        # document_rule.json 저장
+        # newformat.json 저장
         if "document_rule" in request.FILES:
-            document_rule_file = request.FILES["document_rule"]
-            doc_rule_path = fs.save("document_rule.json", document_rule_file)
-            metadata["documentRule"] = doc_rule_path
-
-        # category_rule.json 저장
-        if "category_rule" in request.FILES:
-            category_rule_file = request.FILES["category_rule"]
-            cat_rule_path = fs.save("category_rule.json", category_rule_file)
-            metadata["categoryRule"] = cat_rule_path
+            newformat_file = request.FILES["document_rule"]
+            newformat_path = fs.save("newformat.json", newformat_file)
+            metadata["newformat"] = newformat_path
 
         # metadata.json 저장
         with open(os.path.join(rule_dir, "metadata.json"), "w", encoding="utf-8") as f:

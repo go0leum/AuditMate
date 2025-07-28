@@ -21,7 +21,7 @@ const ModalOverlay = styled.div`
 const ModalContent = styled.div`
   background: white;
   width: 450px;
-  height: 400px;
+  height: 300px;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -74,9 +74,7 @@ const ButtonGroup = styled.div`
 const UploadRuleModal = ({ isOpen, onClose }) => {
   const {
     documentRule,
-    categoryRule,
     setDocumentRule,
-    setCategoryRule,
     handleUpload,
     ruleName,
     setRuleName
@@ -84,7 +82,6 @@ const UploadRuleModal = ({ isOpen, onClose }) => {
 
   // ref 생성
   const documentRuleInputRef = useRef();
-  const categoryRuleInputRef = useRef();
 
   const handleUploadAndClose = () => {
     handleUpload("rule");
@@ -117,29 +114,19 @@ const UploadRuleModal = ({ isOpen, onClose }) => {
                 style={{ display: "none" }}
                 onChange={e => setDocumentRule(e.target.files[0])}
               />
-              <Button onClick={() => documentRuleInputRef.current.click()}>
-                Upload
+              <Button
+                onClick={() => documentRuleInputRef.current.click()}
+                style={{
+                  fontSize: "11px",
+                  padding: "6px 12px",
+                  lineHeight: "1.1", // 줄간 간격을 더 좁게
+                  minHeight: "32px"
+                }}
+              >
+                Choose <br /> File
               </Button>
               <DisplayBox className={documentRule ? "" : "placeholder"}>
                 {documentRule ? documentRule.name : "파일을 선택하세요"}
-              </DisplayBox>
-            </div>
-          </InputContainer>
-          <InputContainer>
-            <Label>증빙 구분 & 세목명 규칙</Label>
-            <div style={{ flexDirection: "row", display: "flex", alignItems: "center", gap: "10px" }}>
-              <input
-                type="file"
-                accept=".json"
-                ref={categoryRuleInputRef}
-                style={{ display: "none" }}
-                onChange={e => setCategoryRule(e.target.files[0])}
-              />
-              <Button onClick={() => categoryRuleInputRef.current.click()}>
-                Upload
-              </Button>
-              <DisplayBox className={categoryRule ? "" : "placeholder"}>
-                {categoryRule ? categoryRule.name : "파일을 선택하세요"}
               </DisplayBox>
             </div>
           </InputContainer>

@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import React, { useContext, useState } from "react";
 import styled from "styled-components";
 
 import { FileContext } from "../context/FileContext";
@@ -95,9 +95,9 @@ const RuleList = () => {
   return (
     <BaseContainer direction="row">
       <SideBar/>
+       <TopBar Title='Rule List' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
       <UploadRuleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onUpload={(data) => console.log(data)} />
       <BaseContainer direction="column" $padding={false}>
-        <TopBar Title='Rule List' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Button onClick={() => setIsModalOpen(true)}>Import</Button>
           <Button onClick={() => handleCheckExport("rule")} secondary>Export</Button>
@@ -110,8 +110,8 @@ const RuleList = () => {
         >
           {sortedData.length > 0 ? (
             sortedData.map((rule, index) => (
-              <>
-                <RowContainer key={index}>
+              <React.Fragment key={rule.folderName || index}>
+                <RowContainer>
                   <RowItem width={100}>
                     <input
                       type="checkbox"
@@ -123,14 +123,14 @@ const RuleList = () => {
                     width={250}
                     $clickable
                     style={{ cursor: 'pointer' }}
-                    onClick={() => openRuleDrawer(rule)} // 클릭 시 Drawer 오픈
+                    onClick={() => openRuleDrawer(rule)}
                   >
                     {rule.folderName}
                   </RowItem>
                   <RowItem width={250}>{rule.uploadTime}</RowItem>
                 </RowContainer>
                 <Line />
-              </>
+              </React.Fragment>
             ))
           ) : (
             <div style={{ padding: '20px' }}>데이터가 없습니다.</div>

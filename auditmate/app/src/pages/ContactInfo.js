@@ -219,8 +219,8 @@ const ContactInfo = () => {
   return (
     <BaseContainer direction="row">
       <SideBar/>
+      <TopBar Title='Contact Info' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
       <BaseContainer direction="column">
-        <TopBar Title='Contact Info' options={options} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} sortValue={sortValue} onSortChange={setSortValue}/>
         <div style={{ width: 'calc(100% - 60px)', padding: '0 20px', gap: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Button onClick={handleAddRow}>Add</Button>
           <Button onClick={handleCheckDelete} danger>Delete</Button>

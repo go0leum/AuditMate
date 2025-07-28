@@ -207,6 +207,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
   }, [open, onClose, handlePrev, handleNext]);
 
   const row = sortedData[selectedIndex];
+  const minWidth = columns.reduce((sum, col) => sum + (col.width || 110), 0) + 'px';
 
   return (
     <>
@@ -221,8 +222,8 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
               <Button onClick={handlePrev}>Before</Button>
               <Button onClick={handleNext} secondary>Next</Button>
             </BottonSection>
-            <Table columns={columns} width="100%">
-              <RowContainer $width="100%">
+            <Table minWidth={minWidth} columns={columns}>
+              <RowContainer minWidth={minWidth}>
                 {row && columns.map((column, index) => {
                   const value = row[column.label];
                   if (column.label === '집행금액' && typeof value === 'number') {

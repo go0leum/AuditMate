@@ -118,7 +118,18 @@ const RuleProvider = ({ children }) => {
   const handleSetRule = useCallback((rule) => {
     setEditRule(rule);
     setSelectedDocumentRule(rule?.documentRule || null);
-    setSelectedCategoryRule(rule?.categoryRule || null);
+
+    // newformat에서 category_rule 추출
+    if (rule?.newformat) {
+      setSelectedCategoryRule({
+        세목명: Object.keys(rule.newformat.세목명 || {}),
+        증빙구분: Object.keys(rule.newformat.증빙구분 || {})
+      });
+    } else if (rule?.categoryRule) {
+      setSelectedCategoryRule(rule.categoryRule);
+    } else {
+      setSelectedCategoryRule(null);
+    }
   }, []);
 
   const handleSetRuleFromFetch = useCallback((rule) => {

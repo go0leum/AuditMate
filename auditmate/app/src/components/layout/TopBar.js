@@ -3,13 +3,18 @@ import SortDropdown from '../common/SortDropdown';
 import SearchBox from '../common/SearchBox';
 
 const Container = styled.div`
-  width: calc(100% - 60px);
+  position: fixed;           // 추가: 상단 고정
+  top: 0;                    // 추가: 상단에서 0px
+  left: 90px;      
+  z-index: 100;          // 다른 요소 위에 표시(필요시)
+  width: calc(100% - 150px);
   height: 80px;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  padding: 0 30px;
+  padding: 0px 30px;
+  background: white;
 `;
 
 const Title = styled.div`
