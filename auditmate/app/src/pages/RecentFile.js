@@ -153,7 +153,7 @@ const RecentFile = () => {
               </React.Fragment>
             ))
           ) : (
-            <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
+            <div style={{ padding: '20px', color: '#888', alignItems: 'center', display: 'flex', justifyContent: 'center' }}>데이터가 없습니다.</div>
           )}
         </Table>
       </BaseContainer>

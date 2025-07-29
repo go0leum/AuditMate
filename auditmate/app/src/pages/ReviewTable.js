@@ -83,10 +83,12 @@ const ReviewTable = () => {
         }))
     : [];
   
-  const options = columns.map(col => ({
-    label: col.label,
-    value: `${col.label}-asc`
-  }));
+  const options = columns.length > 0
+    ? columns.map(col => ({
+        label: col.label,
+        value: `${col.label}-asc`
+      }))
+    : [];
 
   const [filterValue, setFilterValue] = useState('all');
 
@@ -181,7 +183,7 @@ const ReviewTable = () => {
             <Button onClick={() => handleExport} secondary>Export</Button>
           </div>
           <Table columns={columns} width="100%">
-            <div style={{ padding: '20px', color: '#888' }}>로딩 중입니다...</div>
+            <div style={{ padding: '20px', color: '#888', alignItems: 'center', display: 'flex', justifyContent: 'center' }}>로딩 중입니다...</div>
           </Table>
         </BaseContainer>
       </BaseContainer>
@@ -202,7 +204,7 @@ const ReviewTable = () => {
       <BaseContainer direction="column" width="auto" $padding={false}>
         {data.length === 0 ? (
           <Table columns={columns}>
-            <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
+            <div style={{ padding: '20px', color: '#888', alignItems: 'center', display: 'flex', justifyContent: 'center' }}>데이터가 없습니다.</div>
           </Table>
         ) : (
           <Table
@@ -211,7 +213,7 @@ const ReviewTable = () => {
             sortValue={sortValue}
           >
             {sortedData.length === 0 ? (
-              <div style={{ padding: '20px' }}>데이터가 없습니다.</div>
+              <div style={{ padding: '20px', color: '#888', alignItems: 'center', display: 'flex', justifyContent: 'center' }}>데이터가 없습니다.</div>
             ) : !selectedCategoryRule ? (
               <div style={{ padding: '20px', color: '#d32f2f' }}>
                 문서 규칙을 불러올 수 없습니다.
@@ -222,22 +224,22 @@ const ReviewTable = () => {
                   <RowContainer minWidth={minWidth} onClick={() => openTableDrawer(index)}>
                     {columns.map((column, colIndex) => {
                       const value = row[column.label];
-
-                      if (typeof value === 'number') {
-                        return (
-                          <RowItem key={colIndex} width={column.width} >
-                            {value.toLocaleString()}
-                          </RowItem>
-                        );
-                      } else if (column.label === '증빙구분' || column.label === '세목명') {
+                      // category_rule의 key값이면 Tag로 표시
+                      if (selectedCategoryRule && Object.keys(selectedCategoryRule).includes(column.label)) {
                         return (
                           <RowItem key={colIndex} width={column.width}>
                             <Tag
-                              options={selectedCategoryRule?.[column.label] || []}
+                              options={selectedCategoryRule[column.label] || []}
                               value={value}
                             >
                               {value}
                             </Tag>
+                          </RowItem>
+                        );
+                      } else if (typeof value === 'number') {
+                        return (
+                          <RowItem key={colIndex} width={column.width}>
+                            {value.toLocaleString()}
                           </RowItem>
                         );
                       } else if (column.label === '검토사항') {

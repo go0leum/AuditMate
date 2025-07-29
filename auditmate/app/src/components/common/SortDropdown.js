@@ -69,11 +69,15 @@ const DropdownItem = styled.div`
 `;
 
 const SortDropdown = ({ options, onChange, initialValue = 'date-asc' }) => {
+  // Hook은 항상 컴포넌트 최상단에서 호출!
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(initialValue);
   const dropdownRef = useRef(null);
 
-  const selectedOption = options.find((opt) => opt.value === selectedValue) || options[0];
+  // 방어 코드: options[0]이 undefined일 수 있으므로
+  const selectedOption = options && options.length > 0
+    ? options.find((opt) => opt.value === selectedValue) || options[0]
+    : { label: '', value: '' };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -84,6 +88,9 @@ const SortDropdown = ({ options, onChange, initialValue = 'date-asc' }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // 렌더링 조건 분기
+  if (!options || options.length === 0) return null;
 
   return (
     <Container ref={dropdownRef} onClick={() => setIsOpen((prev) => !prev)}>

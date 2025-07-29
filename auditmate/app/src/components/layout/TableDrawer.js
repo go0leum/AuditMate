@@ -100,7 +100,7 @@ const Label = styled.div`
 
 const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose, sortedData }) => {
   const { sideRef } = useContext(DrawerContext);
-  const { selectedXlsxFile, tableData, handleMemoChange, handleNoteChange } = useContext(TableContext);
+  const { selectedXlsxFile, tableData, handleMemoChange, handleNoteChange, setIsEditing } = useContext(TableContext);
   const { selectedCategoryRule } = useContext(RuleContext);
 
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
@@ -191,11 +191,11 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
         !/[0-9`~!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/]/.test(e.key)
       ) {
         e.preventDefault();
-        memoInputRef.current?.focus();
+        noteInputRef.current?.focus();
       }
       if (e.key === '*') {
         e.preventDefault();
-        noteInputRef.current?.focus();
+        memoInputRef.current?.focus();
       }
     };
 
@@ -287,18 +287,22 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
                 </Section>
                 <Section>
                   <MemoInput
-                    label="메모"
-                    placeholder="메모를 입력해주세요"
-                    value={row['메모'] ?? ''}
-                    onChange={e => handleMemoChange(selectedIndex, e.target.value)}
-                    ref={memoInputRef}
-                  />
-                  <MemoInput
                     label="보완사항"
                     placeholder="보완사항을 입력해주세요"
                     value={row['보완사항'] ?? ''}
                     onChange={e => handleNoteChange(selectedIndex, e.target.value)}
                     ref={noteInputRef}
+                    onFocus={() => setIsEditing(true)}
+                    onBlur={() => setIsEditing(false)}
+                  />
+                  <MemoInput
+                    label="메모"
+                    placeholder="메모를 입력해주세요"
+                    value={row['메모'] ?? ''}
+                    onChange={e => handleMemoChange(selectedIndex, e.target.value)}
+                    ref={memoInputRef}
+                    onFocus={() => setIsEditing(true)}
+                    onBlur={() => setIsEditing(false)}
                   />
                 </Section>
               </>

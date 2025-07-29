@@ -12,6 +12,7 @@ const TableProvider = ({ children }) => {
   const [selectedXlsxFile, setSelectedXlsxFile] = useState(null);
   const [tableData, setTableData] = useState([]);
   const [tableLoading, setTableLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   
   const fetchExcelData = useCallback(async () => {
     if (!selectedXlsxFile) return;
@@ -81,7 +82,7 @@ const TableProvider = ({ children }) => {
   const debouncedSave = useMemo(
     () => debounce((data) => {
       saveTableData(data);
-    }, 100), //변경후 0.1초후 저장
+    }, 1000), //변경후 1초후 저장
     [saveTableData]
   );
 
@@ -119,11 +120,11 @@ const TableProvider = ({ children }) => {
 
   // 자동 저장
   useEffect(() => {
-    if (selectedXlsxFile && tableData.length > 0) {
+    if (selectedXlsxFile && tableData.length > 0 && !isEditing) {
       debouncedSave(tableData);
     }
     return () => debouncedSave.cancel();
-  }, [selectedXlsxFile, tableData, debouncedSave]);
+  }, [selectedXlsxFile, tableData, debouncedSave, isEditing]);
 
   // reviewTable 진입 시 규칙이 모두 준비되면 항상 서버에서 데이터 fetch
   useEffect(() => {
@@ -220,6 +221,8 @@ const TableProvider = ({ children }) => {
         handleNoteChange,
         tableLoading,
         setTableLoading,
+        isEditing,
+        setIsEditing,
       }}
     >
       {children}
