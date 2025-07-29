@@ -85,24 +85,27 @@ def list_rules(request):
         folder_path = os.path.join(RULE_DIR, folder_name)
         if os.path.isdir(folder_path):  
             document_rule_path = os.path.join(folder_path, "document_rule.json")
-            category_rule_path = os.path.join(folder_path, "category_rule.json")
+            # newformat.json도 지원하려면 아래 라인 추가
+            if not os.path.exists(document_rule_path):
+                document_rule_path = os.path.join(folder_path, "newformat.json")
+
+            document_rule = None
+            category_rule = None
 
             if os.path.exists(document_rule_path):
                 try:
                     with open(document_rule_path, "r", encoding="utf-8") as f:
                         document_rule = json.load(f)
+                    # document_rule의 key값을 기반으로 category_rule 생성
+                    category_rule = {key: list(document_rule[key].keys()) for key in document_rule}
                 except Exception as e:
                     print(f"Rule 파일 읽기 오류: {e}")
                     document_rule = {}
-            
-            if os.path.exists(category_rule_path):
-                try:
-                    with open(category_rule_path, "r", encoding="utf-8") as f:
-                        category_rule = json.load(f)
-                except Exception as e:
-                    print(f"Rule 파일 읽기 오류: {e}")
                     category_rule = {}
-            
+            else:
+                document_rule = {}
+                category_rule = {}
+
             # uploadTime을 "%Y-%m-%d %H:%M:%S" 형식으로
             upload_time = None
             metadata_path = os.path.join(folder_path, "metadata.json")
@@ -119,7 +122,7 @@ def list_rules(request):
             result.append({
                 "folderName": folder_name,
                 "documentRule": document_rule,
-                "categoryRule": category_rule,
+                "categoryRule": category_rule,  # ← 동적으로 생성된 값
                 "uploadTime": upload_time,
             })
 
@@ -382,18 +385,27 @@ def upload_rules(request):
 
         metadata = {
             "folderName": rule_name,
-            "ruleName": rule_name,
-            "newformat": None,
+            "documentRule": None,
+            "categoryRule": None,
             "uploadTime": upload_time,
         }
 
         fs = FileSystemStorage(location=rule_dir)
 
-        # newformat.json 저장
+        # document_rule.json 저장 및 categoryRule 동적 생성
         if "document_rule" in request.FILES:
-            newformat_file = request.FILES["document_rule"]
-            newformat_path = fs.save("newformat.json", newformat_file)
-            metadata["newformat"] = newformat_path
+            rule_file = request.FILES["document_rule"]
+            rule_path = fs.save(rule_file.name, rule_file)
+            # document_rule.json 읽어서 categoryRule 생성
+            try:
+                with open(os.path.join(rule_dir, rule_file.name), "r", encoding="utf-8") as f:
+                    document_rule = json.load(f)
+                metadata["documentRule"] = rule_file.name
+                # document_rule의 key값을 기반으로 categoryRule 생성
+                metadata["categoryRule"] = {key: list(document_rule[key].keys()) for key in document_rule}
+            except Exception as e:
+                metadata["documentRule"] = rule_file.name
+                metadata["categoryRule"] = {}
 
         # metadata.json 저장
         with open(os.path.join(rule_dir, "metadata.json"), "w", encoding="utf-8") as f:
@@ -418,34 +430,6 @@ def download_rule_zip(request, folder_name):
     zip_filename = f"{folder_name}.zip"
     return FileResponse(zip_buffer, as_attachment=True, filename=zip_filename)
 
-def category_rule(request):
-    # Rule_file 폴더에서 첫 번째 폴더의 category_rule.json을 반환
-    import os, json
-    RULE_DIR = os.path.join(settings.BASE_DIR, "Rule_file")
-    for folder_name in os.listdir(RULE_DIR):
-        folder_path = os.path.join(RULE_DIR, folder_name)
-        if os.path.isdir(folder_path):
-            category_rule_path = os.path.join(folder_path, "category_rule.json")
-            if os.path.exists(category_rule_path):
-                with open(category_rule_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                return JsonResponse(data, safe=False)
-    return JsonResponse({}, safe=False)
-
-def document_rule(request):
-    # Rule_file 폴더에서 첫 번째 폴더의 document_rule.json을 반환
-    import os, json
-    RULE_DIR = os.path.join(settings.BASE_DIR, "Rule_file")
-    for folder_name in os.listdir(RULE_DIR):
-        folder_path = os.path.join(RULE_DIR, folder_name)
-        if os.path.isdir(folder_path):
-            document_rule_path = os.path.join(folder_path, "document_rule.json")
-            if os.path.exists(document_rule_path):
-                with open(document_rule_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                return JsonResponse(data, safe=False)
-    return JsonResponse({}, safe=False)
-
 @csrf_exempt
 def save_rule(request):
     if request.method == "POST":
@@ -453,7 +437,6 @@ def save_rule(request):
             body = json.loads(request.body)
             folder_name = body.get("folderName")
             document_rule = body.get("documentRule")
-            category_rule = body.get("categoryRule")
 
             if not folder_name:
                 return JsonResponse({"status": "error", "message": "folderName이 필요합니다."}, status=400)
@@ -465,11 +448,6 @@ def save_rule(request):
             if document_rule is not None:
                 with open(os.path.join(rule_folder, "document_rule.json"), "w", encoding="utf-8") as f:
                     json.dump(document_rule, f, ensure_ascii=False, indent=4)
-
-            # category_rule.json 저장
-            if category_rule is not None:
-                with open(os.path.join(rule_folder, "category_rule.json"), "w", encoding="utf-8") as f:
-                    json.dump(category_rule, f, ensure_ascii=False, indent=4)
 
             # metadata.json의 lastModified만 업데이트
             metadata_path = os.path.join(rule_folder, "metadata.json")

@@ -122,7 +122,13 @@ const RecentFile = () => {
                     onClick={() => {
                       setSelectedXlsxFile(file);
                       const rule = ruleData.find(r => r.folderName === file.ruleName);
-                      setSelectedCategoryRule(rule?.categoryRule || null);
+                      setSelectedCategoryRule(
+                        rule?.documentRule
+                          ? Object.fromEntries(
+                              Object.keys(rule.documentRule).map(key => [key, Object.keys(rule.documentRule[key] || {})])
+                            )
+                          : rule?.categoryRule || null
+                      );
                       setSelectedDocumentRule(rule?.documentRule || null);
                       navigate(`/reviewTable/${file.xlsxFile}`);
                     }}

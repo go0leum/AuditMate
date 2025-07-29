@@ -24,7 +24,11 @@ const Overlay = styled.div`
 `;
 
 const Container = styled.div`
+  width: 750px;
   background-color: #FFFFFF;
+  overflow-y: auto; // 스크롤은 유지
+  height: auto;     // ← 변경
+  min-height: 100vh; // ← 추가
 `;
 
 const SidebarWrapper = styled.div`
@@ -41,9 +45,6 @@ const SidebarWrapper = styled.div`
     $isOpen ? 'translateX(0)' : 'translateX(100%)'};
   transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
   will-change: transform;
-  overflow-y: auto; // 스크롤은 유지
-  height: auto;     // ← 변경
-  min-height: 100vh; // ← 추가
 `;
 
 const Content = styled.div`
@@ -209,6 +210,17 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
   const row = sortedData[selectedIndex];
   const minWidth = columns.reduce((sum, col) => sum + (col.width || 110), 0) + 'px';
 
+  // row에서 selectedCategoryRule의 key값만 추출해서 dictionary로 반환하는 함수
+  const getCategoryDataFromRow = (row, selectedCategoryRule) => {
+    if (!row || !selectedCategoryRule) return {};
+    const keys = Object.keys(selectedCategoryRule);
+    const result = {};
+    keys.forEach(key => {
+      result[key] = row[key];
+    });
+    return result;
+  };
+
   return (
     <>
       <Overlay open={open} onClick={onClose} />
@@ -226,21 +238,22 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
               <RowContainer minWidth={minWidth}>
                 {row && columns.map((column, index) => {
                   const value = row[column.label];
-                  if (column.label === '집행금액' && typeof value === 'number') {
-                    return (
-                      <RowItem key={index} width={column.width}>
-                        {value.toLocaleString()}
-                      </RowItem>
-                    );
-                  } else if (column.label === '증빙구분' || column.label === '세목명') {
+                  // selectedCategoryRule의 key 중 하나일 때 Tag로 표시
+                  if (selectedCategoryRule && Object.keys(selectedCategoryRule).includes(column.label)) {
                     return (
                       <RowItem key={index} width={column.width}>
                         <Tag
-                          options={selectedCategoryRule?.[column.label] || []}
-                          value={row[column.label]}
+                          options={selectedCategoryRule[column.label] || []}
+                          value={value}
                         >
-                          {row[column.label]}
+                          {value}
                         </Tag>
+                      </RowItem>
+                    );
+                  } else if (typeof value === 'number') {
+                    return (
+                      <RowItem key={index} width={column.width}>
+                        {value.toLocaleString()}
                       </RowItem>
                     );
                   } else {
@@ -256,8 +269,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
             {row && (
               <>
                 <DocumentList
-                  category={row['세목명']}
-                  proof={row['증빙구분']}
+                  data={getCategoryDataFromRow(row, selectedCategoryRule)}
                   selectedIndex={selectedIndex}
                   checkedDocuments={checkedDocuments}
                 />

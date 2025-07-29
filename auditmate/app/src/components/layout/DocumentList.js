@@ -85,35 +85,23 @@ const ButtonText = styled.div`
   justify-content: center;
 `;
 
-const DocumentList = ({ category, proof, selectedIndex, checkedDocuments }) => {
+const DocumentList = ({ data, selectedIndex, checkedDocuments }) => {
   const { selectedDocumentRule } = useContext(RuleContext);
   const { handleCheckedDocumentsChange } = useContext(TableContext);
   const inputBuffer = useRef('');
 
-  // useMemo로 sections 생성
-  const documentSections = useMemo(
-    () => selectedDocumentRule.세목별서류?.[category] || {},
-    [selectedDocumentRule.세목별서류, category]
-  );
-  const proofSections = useMemo(
-    () => selectedDocumentRule.증빙구분별서류?.[proof] || {},
-    [selectedDocumentRule.증빙구분별서류, proof]
-  );
-
-  // 1. doc 버튼에 번호 부여 (1번부터)
+  // data 기반으로 문서 리스트 생성
   const docList = useMemo(() => {
+    if (!selectedDocumentRule || !data) return [];
     let docs = [];
-    Object.entries(documentSections).forEach(([phase, phaseDocs]) => {
-      docs = docs.concat(phaseDocs);
+    Object.entries(data).forEach(([key, value]) => {
+      if (selectedDocumentRule[key] && selectedDocumentRule[key][value]) {
+        docs = docs.concat(selectedDocumentRule[key][value]);
+      }
     });
-    Object.entries(proofSections).forEach(([proofType, proofDocs]) => {
-      docs = docs.concat(proofDocs);
-    });
-    // 중복 제거
     return [...new Set(docs)];
-  }, [documentSections, proofSections]);
+  }, [selectedDocumentRule, data]);
 
-  // handleClick을 useCallback으로 감싸고, useEffect deps에 포함
   const handleClick = useCallback((doc) => {
     let newChecked;
     if (checkedDocuments.includes(doc)) {
@@ -127,56 +115,40 @@ const DocumentList = ({ category, proof, selectedIndex, checkedDocuments }) => {
   // 번호 입력 로직: 1~9, 0(10), +1~+9(11~19), +0(20)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // + 입력 시작
       if (e.key === '+') {
         inputBuffer.current = '+';
         return;
       }
-      // +가 입력된 상태에서 숫자 입력
       if (inputBuffer.current === '+' && /^\d$/.test(e.key)) {
-        let idx;
-        if (e.key === '0') {
-          idx = 19; // +0 → 20번째(인덱스 19)
-        } else {
-          idx = 10 + Number(e.key) - 1; // +1~+9 → 11~19번째(인덱스 10~18)
-        }
-        if (docList[idx]) {
-          handleClick(docList[idx]);
-        }
+        let idx = e.key === '0' ? 19 : 10 + Number(e.key) - 1;
+        if (docList[idx]) handleClick(docList[idx]);
         inputBuffer.current = '';
         return;
       }
-      // 일반 숫자 입력
       if (/^\d$/.test(e.key)) {
-        let idx;
-        if (e.key === '0') {
-          idx = 9; // 0 → 10번째(인덱스 9)
-        } else {
-          idx = Number(e.key) - 1; // 1~9 → 1~9번째(인덱스 0~8)
-        }
-        if (docList[idx]) {
-          handleClick(docList[idx]);
-        }
+        let idx = e.key === '0' ? 9 : Number(e.key) - 1;
+        if (docList[idx]) handleClick(docList[idx]);
         inputBuffer.current = '';
         return;
       }
-      // 그 외 입력 시 버퍼 초기화
       inputBuffer.current = '';
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [docList, handleClick]);
 
-  // 3. 버튼에 번호 표시
+  // 버튼에 번호 표시
   let docIdx = 0;
 
   return (
     <Wrapper>
       <Title>검토 사항</Title>
       <Section>
-        <SubTitle>세목: {category} / 증빙구분: {proof}</SubTitle>
+        <SubTitle>
+          {data && Object.entries(data).map(([key, value]) => `${key}: ${value}`).join(' / ')}
+        </SubTitle>
         {chunkArray(docList, 4).map((docGroup, rowIndex) => (
-          <Row key={`${rowIndex}`}>
+          <Row key={rowIndex}>
             {docGroup.map(doc => (
               <Button
                 key={doc}

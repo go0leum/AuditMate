@@ -119,12 +119,15 @@ const RuleProvider = ({ children }) => {
     setEditRule(rule);
     setSelectedDocumentRule(rule?.documentRule || null);
 
-    // newformat에서 category_rule 추출
-    if (rule?.newformat) {
-      setSelectedCategoryRule({
-        세목명: Object.keys(rule.newformat.세목명 || {}),
-        증빙구분: Object.keys(rule.newformat.증빙구분 || {})
-      });
+    // documentRule category_rule 추출: key만 추출해서 배열로 저장
+    if (rule?.documentRule) {
+      // documentRule 각 key의 value가 객체가 맞는지 확인
+      console.log("documentRule:", rule.documentRule);
+      setSelectedCategoryRule(
+        Object.fromEntries(
+          Object.keys(rule.documentRule).map(key => [key, Object.keys(rule.documentRule[key] || {})])
+        )
+      );
     } else if (rule?.categoryRule) {
       setSelectedCategoryRule(rule.categoryRule);
     } else {

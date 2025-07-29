@@ -123,7 +123,7 @@ const RuleList = () => {
                     width={250}
                     $clickable
                     style={{ cursor: 'pointer' }}
-                    onClick={() => openRuleDrawer(rule)}
+                    // onClick={() => openRuleDrawer(rule)}
                   >
                     {rule.folderName}
                   </RowItem>
@@ -137,13 +137,13 @@ const RuleList = () => {
           )}
         </Table>
       </BaseContainer>
-      {sortedData.length > 0 && (
+      {/* {sortedData.length > 0 && (
         <RuleDrawer 
           open={ruleDrawerOpen} 
           onClose={handleDrawerClose} 
           width={750}
         />
-      )}
+      )} */}
     </BaseContainer>
   );
 };

@@ -33,7 +33,6 @@ const ReviewTable = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [TableDrawerOpen, setTableDrawerOpen] = useState(false);
-  const [sortValue, setSortValue] = useState('N-asc');
   const [drawerIndex, setDrawerIndex] = useState(0);
 
   const data = tableData.map((row, idx) => ({ ...row, _originalIndex: idx }));
@@ -70,8 +69,6 @@ const ReviewTable = () => {
     { label: '메모 값 있음', value: 'memo' },
   ];
 
-  const [filterValue, setFilterValue] = useState('all');
-
   const columns = tableData.length > 0
     ? Object.keys(tableData[0])
         .filter(label => label !== '_originalIndex') // 인덱스 제외
@@ -85,6 +82,15 @@ const ReviewTable = () => {
                 : 110 // 기본값(숫자, 날짜, 코드 등)
         }))
     : [];
+  
+  const options = columns.map(col => ({
+    label: col.label,
+    value: `${col.label}-asc`
+  }));
+
+  const [filterValue, setFilterValue] = useState('all');
+
+  const [sortValue, setSortValue] = useState(options[0]?.value || 'original'); // 예: '집행금액'
 
   // 컬럼 클릭 시 정렬 상태 토글
   const handleColumnClick = (label) => {
@@ -117,7 +123,18 @@ const ReviewTable = () => {
   };
 
   // 필터링 적용
-  const filteredData = data.filter(row => {
+  const filteredData = data
+  // sortValue가 '전체'가 아니면 해당 컬럼에 값이 있는 row만 반환
+  .filter(row => {
+    if (sortValue && sortValue !== 'original' && sortValue !== '전체') {
+      // sortValue가 '집행금액-asc' 또는 '집행금액-desc' 형태라면 컬럼명만 추출
+      const colName = sortValue.split('-')[0];
+      const v = row[colName];
+      return v !== undefined && v !== null && v !== '';
+    }
+    return true;
+  })
+  .filter(row => {
     if (filterValue === 'all') return true;
     if (filterValue === 'answer') {
       const v = row['답변'];
@@ -136,7 +153,8 @@ const ReviewTable = () => {
       return typeof v === 'string' && v.replace(/[-\s]/g, '').length > 0;
     }
     return true;
-  }).filter(row =>
+  })
+  .filter(row =>
     searchTerm.trim()
       ? Object.values(row).some(
           (value) =>
@@ -152,10 +170,7 @@ const ReviewTable = () => {
   // --- 데이터 준비 전에는 안내문만 출력 ---
   if (
     ruleLoading ||
-    tableLoading ||
-    !selectedXlsxFile ||
-    !selectedCategoryRule ||
-    !selectedDocumentRule
+    tableLoading 
   ) {
     return (
       <BaseContainer direction="row" >
@@ -178,11 +193,11 @@ const ReviewTable = () => {
       <SideBar />
       <TopBar
           Title="Review Table"
-          options={filterOptions}
+          options={options} // ← 컬럼 옵션을 전달
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          filterValue={filterValue}
-          onFilterChange={setFilterValue}
+          sortValue={sortValue}
+          onSortChange={setSortValue}
         />
       <BaseContainer direction="column" width="auto" $padding={false}>
         {data.length === 0 ? (
