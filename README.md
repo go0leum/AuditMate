@@ -132,8 +132,6 @@ AuditMate의 ReviewTable 화면에서는 아래와 같은 키보드 단축키를
   ```
   yarn start
   ```
-
----
 ---
 
 필요시 다음 내용을 추가할 수 있습니다:
