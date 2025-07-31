@@ -82,9 +82,62 @@ AuditMate의 ReviewTable 화면에서는 아래와 같은 키보드 단축키를
 
 ---
 
+## ⚡ 설치 및 실행 가이드
+
+### 1. 백엔드 (Django) - Python 사용
+
+#### Python 및 pip 설치
+- [Python 공식 홈페이지](https://www.python.org/downloads/)에서 설치
+- 설치 후, 아래 명령어로 버전 확인:
+  ```
+  python --version
+  pip --version
+  ```
+
+#### 가상환경 생성 (권장)
+- Windows:
+  ```
+  python -m venv venv
+  venv\Scripts\activate
+  ```
+- macOS/Linux:
+  ```
+  python3 -m venv venv
+  source venv/bin/activate
+  ```
+
+#### Django 및 의존성 설치
+  ```
+  cd auditmate/backend
+  pip install -r requirements.txt
+  ```
+
+
+### 2. 프론트엔드 (React) - Yarn 사용
+
+#### Yarn 설치
+- [Yarn 공식 홈페이지](https://classic.yarnpkg.com/lang/en/docs/install/) 참고
+- Windows에서 PowerShell 또는 명령 프롬프트에 아래 명령어 입력:
+  ```
+  npm install -g yarn
+  ```
+
+#### 프론트엔드 의존성 설치
+  ```
+  cd auditmate/app
+  yarn install
+  ```
+
+#### 개발 서버 실행
+  ```
+  yarn start
+  ```
+
+---
+---
+
 필요시 다음 내용을 추가할 수 있습니다:
 
-* 설치 및 실행 방법
 * API 명세 링크
 * 회계 규정 문서 레퍼런스
 * 예시 보고서 스크린샷
