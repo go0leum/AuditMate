@@ -235,15 +235,16 @@ def upload_files(request):
 
 @csrf_exempt
 def read_xlsx(request):
-    expected_columns = [
-        'N', '항목명', '세부항목명', '교부액', '실집행액', '최종교부액', '초과집행액', '증빙번호', '비고',
-        '준수 여부', '단가 (이내)', '기준', '집행실행일자', '증빙구분', '집행용도', '비목명', '세목명',
-        '거래처명', '예금주명', '공급가액(A)', '부가세(B)', '집행취소(C)', '집행금액(A+B)-C',
-        '취소사유', '검토사항', '메모', '보완사항', '답변', '회계연도', '사업명', '과제명', '예산코드',
-        '예산잔액', '세금계산서 발행 여부', '지출 승인자', '지급수단', '증빙파일 존재 여부', '증빙유형 상세',
-        '법인카드 번호', '계좌번호', '내부규정 부합 여부', '중복 집행 여부', '거래처 등록 여부',
-        '입찰/계약서 존재 여부', '감사 메모', '감사 소견', '지출 사유 요약', '첨부파일명', '업로드 일시',
-        '담당자', '반려 사유', '단가', '공급가액', '부가세', '집행취소', '집행금액',
+    # 기본적으로 항상 있어야 하는 핵심 컬럼들만 정의
+    core_columns = [
+        '검토사항', '메모', '보완사항'  # 시스템에서 필수로 사용하는 컬럼들
+    ]
+    
+    # 자주 사용되는 컬럼들 (참고용)
+    common_columns = [
+        '번호', '사용일자', '집행실행일자', '항목', '내역', '금액', '집행금액', 
+        '적요', '증빙구분', '집행용도', '비목명', '세목명', '거래처명', '예금주명',
+        '취소사유', '답변', '회계연도', '사업명', '과제명'
     ]
 
     if request.method == 'POST':
@@ -268,12 +269,17 @@ def read_xlsx(request):
                     'data': None,
                     'message': '엑셀 파일에 정렬(필터) 조건이 포함되어 있으면 읽을 수 없습니다. 엑셀에서 모든 정렬/필터를 해제하고 다시 업로드 해주세요.',
                     'error_detail': str(e),
-                    'expected_columns': expected_columns,
+                    'core_columns': core_columns,
                     'actual_columns': [],
                 }, status=500, safe=False, json_dumps_params={'ensure_ascii': False})
 
             df.columns = df.columns.str.strip()
             df = df.replace({np.nan: None})
+
+            # 핵심 컬럼이 없으면 생성
+            for col in core_columns:
+                if col not in df.columns:
+                    df[col] = None
 
             progress = calculate_progress(df)
 
@@ -290,15 +296,17 @@ def read_xlsx(request):
                     print(f"Metadata 업데이트 오류: {e}")
 
             actual_columns = list(df.columns)
-            extra_columns = [col for col in actual_columns if col not in expected_columns]
-            if extra_columns:
+            
+            # 핵심 컬럼 중 없는 것들 체크
+            missing_core = [col for col in core_columns if col not in actual_columns]
+            if missing_core:
                 return JsonResponse({
                     'status': 'warning',
-                    'message': '엑셀 파일에 예상치 못한 컬럼이 있습니다. 컬럼명을 수정해 주세요.',
-                    'data': None,
-                    'expected_columns': expected_columns,
+                    'message': f'핵심 컬럼이 누락되었습니다: {", ".join(missing_core)}. 자동으로 생성됩니다.',
+                    'data': df.to_dict(orient='records'),
+                    'core_columns': core_columns,
                     'actual_columns': actual_columns,
-                    'extra_columns': extra_columns
+                    'missing_core': missing_core
                 }, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
 
             data = df.to_dict(orient='records')
@@ -306,8 +314,9 @@ def read_xlsx(request):
                 'status': 'success',
                 'data': data,
                 'message': '엑셀 파일을 성공적으로 읽었습니다.',
-                'expected_columns': expected_columns,
-                'actual_columns': actual_columns
+                'core_columns': core_columns,
+                'actual_columns': actual_columns,
+                'total_columns': len(actual_columns)
             }, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
 
         except Exception as e:
@@ -315,7 +324,7 @@ def read_xlsx(request):
                 'status': 'error',
                 'data': None,
                 'message': str(e),
-                'expected_columns': expected_columns,
+                'core_columns': core_columns,
                 'actual_columns': [],
             }, status=500, safe=False, json_dumps_params={'ensure_ascii': False})
 
@@ -323,7 +332,7 @@ def read_xlsx(request):
         'status': 'error',
         'message': 'Invalid request method',
         'data': None,
-        'expected_columns': expected_columns,
+        'core_columns': core_columns,
         'actual_columns': [],
     }, status=405, safe=False, json_dumps_params={'ensure_ascii': False})
 
