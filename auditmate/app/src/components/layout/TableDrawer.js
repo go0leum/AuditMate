@@ -26,9 +26,9 @@ const Overlay = styled.div`
 const Container = styled.div`
   width: 750px;
   background-color: #FFFFFF;
-  overflow-y: auto; // 스크롤은 유지
-  height: auto;     // ← 변경
-  min-height: 100vh; // ← 추가
+  overflow-y: auto;
+  height: 100%; // ← 변경: auto 대신 100%
+  min-height: 100vh;
 `;
 
 const SidebarWrapper = styled.div`
@@ -36,11 +36,14 @@ const SidebarWrapper = styled.div`
   border-left: 1px solid #B5B7C0;
   position: fixed;
   top: 0;
-  bottom: 0;
+  bottom: 0; // ← 이 부분을 제거하거나 height: auto로 변경
   right: 0;
   color: #202020;
   z-index: 200;
   width: ${({ width }) => width}px;
+  height: auto; // ← 추가
+  max-height: 100vh; // ← 추가: 최대 높이 제한
+  overflow-y: auto; // ← 추가: 내용이 넘칠 때 스크롤
   transform: ${({ $isOpen }) =>
     $isOpen ? 'translateX(0)' : 'translateX(100%)'};
   transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
