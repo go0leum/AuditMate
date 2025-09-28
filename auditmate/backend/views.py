@@ -81,52 +81,58 @@ def list_rules(request):
         return JsonResponse({"error": "Rule_file 폴더가 존재하지 않습니다."}, status=404)
 
     result = []
+    
     for folder_name in os.listdir(RULE_DIR):
         folder_path = os.path.join(RULE_DIR, folder_name)
-        if os.path.isdir(folder_path):  
-            document_rule_path = os.path.join(folder_path, "document_rule.json")
-            # newformat.json도 지원하려면 아래 라인 추가
-            if not os.path.exists(document_rule_path):
-                document_rule_path = os.path.join(folder_path, "newformat.json")
+        if not os.path.isdir(folder_path):
+            continue
+            
+        rule_info = load_rule_from_folder(folder_path, folder_name)
+        result.append(rule_info)
 
-            document_rule = None
-            category_rule = None
+    return JsonResponse(result, safe=False, json_dumps_params={'ensure_ascii': False})
 
-            if os.path.exists(document_rule_path):
-                try:
+def load_rule_from_folder(folder_path, folder_name):
+    """
+    개별 규칙 폴더에서 규칙 정보를 로딩하는 함수
+    """
+    metadata_path = os.path.join(folder_path, "metadata.json")
+    default_upload_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 기본값 설정
+    result = {
+        "folderName": folder_name,
+        "documentRule": {},
+        "categoryRule": {},
+        "uploadTime": default_upload_time,
+    }
+    
+    if os.path.exists(metadata_path):
+        try:
+            with open(metadata_path, "r", encoding="utf-8") as f:
+                metadata = json.load(f)
+            
+            # 메타데이터에서 정보 추출
+            result["uploadTime"] = metadata.get("uploadTime", default_upload_time)
+            result["categoryRule"] = metadata.get("categoryRule", {})
+            
+            # documentRule 파일 로딩
+            document_rule_filename = metadata.get("documentRule")
+            if document_rule_filename:
+                document_rule_path = os.path.join(folder_path, document_rule_filename)
+                if os.path.exists(document_rule_path):
                     with open(document_rule_path, "r", encoding="utf-8") as f:
-                        document_rule = json.load(f)
-                    # document_rule의 key값을 기반으로 category_rule 생성
-                    category_rule = {key: list(document_rule[key].keys()) for key in document_rule}
-                except Exception as e:
-                    print(f"Rule 파일 읽기 오류: {e}")
-                    document_rule = {}
-                    category_rule = {}
-            else:
-                document_rule = {}
-                category_rule = {}
+                        result["documentRule"] = json.load(f)
+                else:
+                    print(f"Warning: documentRule 파일이 존재하지 않음 - {document_rule_path}")
+            
+        except Exception as e:
+            print(f"Error: 메타데이터 로딩 실패 ({folder_name}): {e}")
 
-            # uploadTime을 "%Y-%m-%d %H:%M:%S" 형식으로
-            upload_time = None
-            metadata_path = os.path.join(folder_path, "metadata.json")
-            if os.path.exists(metadata_path):
-                try:
-                    with open(metadata_path, "r", encoding="utf-8") as f:
-                        metadata = json.load(f)
-                    upload_time = metadata.get("uploadTime")
-                except Exception as e:
-                    print(f"metadata.json 읽기 오류: {e}")
-            if not upload_time:
-                upload_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            result.append({
-                "folderName": folder_name,
-                "documentRule": document_rule,
-                "categoryRule": category_rule,  # ← 동적으로 생성된 값
-                "uploadTime": upload_time,
-            })
-
-    return JsonResponse(result, safe=False)
+    else:
+        print(f"Warning: metadata.json이 없음 - {folder_name}")
+    
+    return result
 
 def download_file(request, folder_name, file_name):
     file_path = os.path.join(UPLOAD_DIR, folder_name, file_name)
