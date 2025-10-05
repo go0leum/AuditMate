@@ -41,9 +41,9 @@ const ReviewTable = () => {
   };
 
   const handleDrawerClose = () => {
-    // TableDrawer 내부에서 먼저 저장됨
+    // TableDrawer 내부에서 이미 자동 저장됨 (debounced save)
     setTableDrawerOpen(false);
-    fetchExcelData(); // 서버에서 새로고침
+    // fetchExcelData() 제거: 불필요한 서버 새로고침으로 인한 하얀 화면 방지
   };
 
   // drawer가 열릴 때 body 스크롤 막기

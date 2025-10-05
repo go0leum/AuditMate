@@ -5,7 +5,7 @@ import DocumentList from "./DocumentList";
 import MemoInput from "../common/MemoInput";
 import Button from "../common/Button";
 import Table from "./Table";
-import Tag from "../common/Tag"; // 상단 import 추가
+import Tag from "../common/Tag"; 
 
 import { DrawerContext } from "../../context/DrawerContext";
 import { TableContext } from "../../context/TableContext";
@@ -27,7 +27,7 @@ const Container = styled.div`
   width: 750px;
   background-color: #FFFFFF;
   overflow-y: auto;
-  height: 100%; // ← 변경: auto 대신 100%
+  height: 100%;
   min-height: 100vh;
 `;
 
@@ -36,14 +36,14 @@ const SidebarWrapper = styled.div`
   border-left: 1px solid #B5B7C0;
   position: fixed;
   top: 0;
-  bottom: 0; // ← 이 부분을 제거하거나 height: auto로 변경
+  bottom: 0; 
   right: 0;
   color: #202020;
   z-index: 200;
   width: ${({ width }) => width}px;
-  height: auto; // ← 추가
-  max-height: 100vh; // ← 추가: 최대 높이 제한
-  overflow-y: auto; // ← 추가: 내용이 넘칠 때 스크롤
+  height: auto; 
+  max-height: 100vh; 
+  overflow-y: auto; 
   transform: ${({ $isOpen }) =>
     $isOpen ? 'translateX(0)' : 'translateX(100%)'};
   transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
@@ -66,7 +66,7 @@ const Section = styled.div`
   justify-content: flex-start;
   gap: 50px;
   align-self: stretch;
-  height: auto;     // 추가: 내부 컴포넌트 높이에 맞게 자동 조절
+  height: auto;     
 `;
 
 const BottonSection = styled.div`
@@ -128,7 +128,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
   useEffect(() => {
     const row = tableData[selectedIndex];
     setCheckedDocuments(toDocArray(row?.['검토사항']));
-  }, [selectedIndex, tableData]); // tableData 추가
+  }, [selectedIndex, tableData]); 
 
   // useCallback으로 감싸기
   const handlePrev = useCallback(() => {
