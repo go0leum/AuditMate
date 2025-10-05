@@ -52,10 +52,16 @@ const MemoInput = forwardRef(({ label, placeholder, value, onChange }, ref) => {
   // Enter 키 누르면 blur
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
-      e.stopPropagation(); // ← 이 줄 추가!
-      if (ref && typeof ref !== 'function' && ref.current) {
-        ref.current.blur();
+      if (e.shiftKey) {
+        // Shift+Enter: 줄바꿈 허용 
+        return;
+      } else {
+        // Enter: blur 처리
+        e.preventDefault();
+        e.stopPropagation(); 
+        if (ref && typeof ref !== 'function' && ref.current) {
+          ref.current.blur();
+        }
       }
     }
   };
