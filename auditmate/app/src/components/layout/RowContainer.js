@@ -5,9 +5,10 @@ const RowContainerStyle = styled.div`
   width: 100%;
   display: flex;
   padding: ${({ $padding }) => $padding || '20px 20px'};
-  align-items: center;
+  align-items: stretch; // center 대신 stretch로 변경하여 높이 자동 조정
   justify-content: space-between;
   box-sizing: border-box;
+  min-height: 60px; // 최소 높이 보장 (패딩 포함)
 `;
 
 const Line = styled.div`
