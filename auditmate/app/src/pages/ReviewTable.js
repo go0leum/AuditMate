@@ -14,19 +14,16 @@ import { RuleContext } from '../context/RuleContext';
 import RowContainer from '../components/layout/RowContainer';
 import RowItem from '../components/common/RowItem';
 
+// 텍스트 자르기 유틸리티 함수
+const truncateText = (text, maxLength = 50) => {
+  if (!text || typeof text !== 'string') return text || '-';
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+};
+
 const TEXT_COLUMNS = [
   '비고', '집행용도', '취소사유', '검토사항', '메모', '보완사항', '답변',
   '세금계산서 발행 여부', '내부규정 부합 여부', '중복 집행 여부', '감사 메모', '감사 소견', '지출 사유 요약', '반려 사유'
 ];
-// NUMBER_COLUMNS, DATE_COLUMNS, CODE_COLUMNS는 현재 사용되지 않으므로 주석 처리
-// const NUMBER_COLUMNS = [
-//   '교부액', '실집행액', '최종교부액', '초과집행액', '공급가액(A)', '부가세(B)', '집행취소(C)', '집행금액(A+B)-C',
-//   '예산잔액', '단가 (이내)', '법인카드 번호', '계좌번호'
-// ];
-// const DATE_COLUMNS = ['집행실행일자', '회계연도', '업로드 일시'];
-// const CODE_COLUMNS = [
-//   '항목명', '세부항목명', '증빙번호', '준수 여부', '기준', '증빙'
-// ];
 
 const ReviewTable = () => {
   const { tableData, handleExport, fetchExcelData, tableLoading } = useContext(TableContext);
@@ -264,10 +261,29 @@ const ReviewTable = () => {
                                 : (value ?? '-')}
                           </RowItem>
                         );
-                      } else if (column.label === '메모' || column.label === '보완사항' || column.label === '검토사항') {
+                      } else if (column.label === '메모' || column.label === '보완사항') {
                         return (
-                          <RowItem key={colIndex} width={column.width}>
-                            {value ?? '-'}
+                          <RowItem key={colIndex} width={column.width} style={{ cursor: 'help' }}>
+                            <span title={value || ''}>
+                              {truncateText(value, 30)}
+                            </span>
+                          </RowItem>
+                        );
+                      } else if (column.label === '답변') {
+                        return (
+                          <RowItem key={colIndex} width={column.width} style={{ cursor: 'help' }}>
+                            <span title={value || ''}>
+                              {truncateText(value, 40)}
+                            </span>
+                          </RowItem>
+                        );
+                      } else if (TEXT_COLUMNS.includes(column.label)) {
+                        // 기타 텍스트 컬럼들 (비고, 집행용도, 취소사유 등)
+                        return (
+                          <RowItem key={colIndex} width={column.width} style={{ cursor: 'help' }}>
+                            <span title={value || ''}>
+                              {truncateText(value, 35)}
+                            </span>
                           </RowItem>
                         );
                       } else {
