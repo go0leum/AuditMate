@@ -214,7 +214,6 @@ const FileProvider = ({ children }) => {
               method: "DELETE",
             });
             alert("엑셀 파일을 읽을 수 없습니다. 정렬/필터를 해제하고 다시 업로드 해주세요.");
-            await fetchFileData(); // 목록 갱신
           }
         } else if (type === "rule") {
           alert("규칙 업로드 성공!");

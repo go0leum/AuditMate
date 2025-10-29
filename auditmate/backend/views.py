@@ -4,6 +4,7 @@ import datetime
 import zipfile
 import pandas as pd
 import numpy as np
+import openpyxl
 from django.http import JsonResponse, FileResponse, Http404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
@@ -15,19 +16,82 @@ UPLOAD_DIR = os.path.join(settings.BASE_DIR, "Upload_file")
 RULE_DIR = os.path.join(settings.BASE_DIR, "Rule_file")
 CONTACT_DIR = os.path.join(settings.BASE_DIR, "Contact_file")
 
-def calculate_progress(df):
+def calculate_progress(worksheet, column_line):
     """
-    '검토사항' 열을 기준으로 진행도를 계산합니다.
+    openpyxl 워크시트에서 '검토사항' 열을 기준으로 진행도를 계산합니다.
     진행도 = 마지막으로 채워진 행의 인덱스 / 전체 행 수 * 100
     """
-    if "검토사항" in df.columns:
-        total_rows = len(df)
-        if total_rows == 0:
-            return 0
-        filled_rows = df[df["검토사항"].notna()].index.max() + 1 if not df[df["검토사항"].notna()].empty else 0
-        return round(filled_rows * 100 / total_rows, 2)
-    return 0
+    # 헤더 행 결정 (columnLine 기준)
+    header_row = column_line + 1 if column_line >= 0 else 1
+    
+    # '검토사항' 컬럼 찾기
+    review_col_idx = None
+    for col_idx in range(1, worksheet.max_column + 1):
+        cell_value = worksheet.cell(row=header_row, column=col_idx).value
+        if cell_value and str(cell_value).strip() == '검토사항':
+            review_col_idx = col_idx
+            break
+    
+    if review_col_idx is None:
+        return 0  # '검토사항' 컬럼이 없으면 0% 반환
+    
+    # 데이터 행 범위 계산 (헤더 다음 행부터)
+    data_start_row = header_row + 1
+    total_rows = 0
+    last_filled_row = 0
+    
+    # 실제 데이터가 있는 행들 확인
+    for row_idx in range(data_start_row, worksheet.max_row + 1):
+        # 해당 행에 데이터가 있는지 확인 (모든 컬럼 체크)
+        has_data = False
+        for col_idx in range(1, worksheet.max_column + 1):
+            cell_value = worksheet.cell(row=row_idx, column=col_idx).value
+            if cell_value is not None and str(cell_value).strip():
+                has_data = True
+                break
+        
+        if has_data:
+            total_rows += 1
+            # '검토사항' 컬럼에 값이 있는지 확인
+            review_value = worksheet.cell(row=row_idx, column=review_col_idx).value
+            if review_value is not None and str(review_value).strip():
+                last_filled_row = total_rows
+    
+    if total_rows == 0:
+        return 0
+    
+    return round(last_filled_row * 100 / total_rows, 2)
 
+def find_column_line(worksheet):
+    """
+    openpyxl 워크시트에서 공통 컬럼 중 하나라도 포함된 가장 첫 번째 행(0-based index)을 찾습니다.
+    """
+        
+    # 자주 사용되는 컬럼들 (참고용) - 실제 Excel에서 발견되는 컬럼명들 포함
+    common_columns = [
+        '번호', '사용일자', '집행실행일자', '항목', '내역', '금액', '집행금액', 
+        '적요', '증빙구분', '집행용도', '비목명', '세목명', '거래처명', '예금주명',
+        '취소사유', '답변', '회계연도', 'N', '사업집행일자', '집행내역', 
+        '집행구분', '세부', '예산', '거래처명', '예금주명', '인출액(B)', 
+        '입금액(C)', '집행금액(A+B)-C', '보완사항', '검토사항', '메모'
+    ]
+
+    # 처음 10행만 검사
+    for row_idx in range(1, min(worksheet.max_row + 1, 11)):
+        row_values = []
+        
+        # 해당 행의 모든 셀 값을 가져와서 문자열로 변환
+        for col_idx in range(1, worksheet.max_column + 1):
+            cell_value = worksheet.cell(row=row_idx, column=col_idx).value
+            if cell_value is not None:
+                row_values.append(str(cell_value).strip())
+        
+        # 정확한 매칭 검사
+        matches = [col for col in common_columns if col in row_values]
+        if len(matches) >= 3:  # 최소 3개 이상의 컬럼이 매칭되면 헤더로 판단
+            return row_idx - 1  # 0-based index로 반환
+    
+    return -1
 
 def list_files(request):
     if not os.path.exists(UPLOAD_DIR):
@@ -55,8 +119,21 @@ def list_files(request):
             progress = 0
             if xlsx_file:
                 try:
-                    df = pd.read_excel(os.path.join(folder_path, xlsx_file))
-                    progress = calculate_progress(df)
+                    # metadata에서 columnLine 정보 가져오기
+                    column_line = metadata_info.get("columnLine", 0)
+                    
+                    # openpyxl로 워크북 로드하여 진행도 계산
+                    workbook = openpyxl.load_workbook(os.path.join(folder_path, xlsx_file), data_only=True)
+                    
+                    # "집행내역" 시트 확인
+                    if "집행내역" in workbook.sheetnames:
+                        worksheet = workbook["집행내역"]
+                        progress = calculate_progress(worksheet, column_line)
+                    else:
+                        # "집행내역" 시트가 없으면 첫 번째 시트 사용
+                        if workbook.sheetnames:
+                            worksheet = workbook[workbook.sheetnames[0]]
+                            progress = calculate_progress(worksheet, column_line)
 
                     # metadata.json 업데이트
                     metadata_info["progress"] = progress
@@ -136,9 +213,19 @@ def load_rule_from_folder(folder_path, folder_name):
 
 def download_file(request, folder_name, file_name):
     file_path = os.path.join(UPLOAD_DIR, folder_name, file_name)
+    metadata_path = os.path.join(UPLOAD_DIR, folder_name, "metadata.json")
 
     if not os.path.exists(file_path):
         raise Http404("File not found")
+    
+    # 메타데이터에서 columnLine 정보 가져오기
+    column_line = 0
+    if os.path.exists(metadata_path):
+        with open(metadata_path, "r", encoding="utf-8") as f:
+            metadata = json.load(f)
+        column_line = metadata.get("columnLine", 0)
+    else:
+        metadata = {}
 
     # type 파라미터 확인
     download_type = request.GET.get('type', 'full')
@@ -147,19 +234,37 @@ def download_file(request, folder_name, file_name):
     if file_name.lower().endswith('.xlsx'):
         try:
             import tempfile
-            df = pd.read_excel(file_path)
+            
+            # openpyxl로 워크북 로드
+            workbook = openpyxl.load_workbook(file_path)
+            
+            # "집행내역" 시트 확인
+            if "집행내역" not in workbook.sheetnames:
+                return JsonResponse({"error": "Excel 파일에 '집행내역' 시트가 없습니다. 시트 이름을 확인해주세요."}, status=400)
+            
+            worksheet = workbook["집행내역"]
+            
             if download_type == 'no_review':
-                # '검토사항', '보완사항', '메모' 열 제외
+                # '검토사항', '메모' 열 찾아서 제거
                 cols_to_exclude = ['검토사항', '메모']
-                cols_to_keep = [col for col in df.columns if col not in cols_to_exclude]
-                df_export = df[cols_to_keep]
-            else:
-                df_export = df
-
+                
+                # 헤더 행 찾기 (column_line 기준)
+                header_row = column_line + 1 if column_line > 0 else 1
+                
+                # 헤더에서 제외할 컬럼의 인덱스 찾기
+                cols_to_delete = []
+                for col_idx in range(1, worksheet.max_column + 1):
+                    cell_value = worksheet.cell(row=header_row, column=col_idx).value
+                    if cell_value and str(cell_value).strip() in cols_to_exclude:
+                        cols_to_delete.append(col_idx)
+                
+                # 뒤에서부터 컬럼 삭제 (인덱스가 변경되지 않도록)
+                for col_idx in reversed(cols_to_delete):
+                    worksheet.delete_cols(col_idx)
+            
             # 임시 파일로 저장
             with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
-                df_export.to_excel(tmp.name, index=False)
-                tmp.seek(0)
+                workbook.save(tmp.name)
                 response = FileResponse(open(tmp.name, "rb"), as_attachment=True, filename=file_name)
             return response
         except Exception as e:
@@ -185,7 +290,6 @@ def upload_files(request):
     if request.method == "POST":
         upload_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         upload_dir = os.path.join(UPLOAD_DIR, upload_time)
-        os.makedirs(upload_dir, exist_ok=True)
 
         metadata = {
             "folderName": upload_time,
@@ -193,7 +297,10 @@ def upload_files(request):
             "lastModified": upload_time,
             "progress": 0,
             "ruleName": None,
+            "columnLine": 0,
         }
+        
+        os.makedirs(upload_dir, exist_ok=True)
 
         fs = FileSystemStorage(location=upload_dir)
 
@@ -203,11 +310,24 @@ def upload_files(request):
             saved_excel_path = fs.save(excel_file.name, excel_file)
             metadata["xlsxFile"] = saved_excel_path
 
-        # 진행도 계산 (Excel 파일에서 "검토사항" 열 기준)
-        if metadata["xlsxFile"]:
+            # 진행도 계산 (Excel 파일에서 "검토사항" 열 기준), 컬럼 행 찾기
             try:
-                df = pd.read_excel(os.path.join(upload_dir, metadata["xlsxFile"]))
-                metadata["progress"] = calculate_progress(df)
+                # openpyxl로 워크북 로드하여 컬럼 라인 찾기
+                workbook = openpyxl.load_workbook(os.path.join(upload_dir, metadata["xlsxFile"]), data_only=True)
+                
+                # "집행내역" 시트 확인
+                if "집행내역" not in workbook.sheetnames:
+                    return JsonResponse({
+                        "status": "error",
+                        "message": 'Excel 파일에 "집행내역" 시트가 없습니다. 시트 이름을 확인해주세요.',
+                        "error_detail": "집행내역 시트 없음"
+                    }, status=400)
+                
+                worksheet = workbook["집행내역"]
+                metadata["columnLine"] = find_column_line(worksheet)
+                
+                # openpyxl로 진행도 계산
+                metadata["progress"] = calculate_progress(worksheet, metadata["columnLine"])
                 metadata["lastModified"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             except Exception as e:
                 # 정렬/필터 등으로 읽기 실패 시 에러 메시지 반환
@@ -245,13 +365,6 @@ def read_xlsx(request):
     core_columns = [
         '검토사항', '메모', '보완사항'  # 시스템에서 필수로 사용하는 컬럼들
     ]
-    
-    # 자주 사용되는 컬럼들 (참고용)
-    common_columns = [
-        '번호', '사용일자', '집행실행일자', '항목', '내역', '금액', '집행금액', 
-        '적요', '증빙구분', '집행용도', '비목명', '세목명', '거래처명', '예금주명',
-        '취소사유', '답변', '회계연도', '사업명', '과제명'
-    ]
 
     if request.method == 'POST':
         try:
@@ -263,12 +376,70 @@ def read_xlsx(request):
                 return JsonResponse({'status': 'error', 'message': 'No filename provided'}, status=400)
 
             file_path = os.path.join(UPLOAD_DIR, folderName, xlsxFile)
+            metadata_path = os.path.join(UPLOAD_DIR, folderName, "metadata.json")
 
             if not os.path.exists(file_path):
                 return JsonResponse({'status': 'error', 'message': 'File not found'}, status=404)
 
+            # metadata에서 columnLine 정보 가져오기
+            column_line = 0
+            if os.path.exists(metadata_path):
+                try: 
+                    with open(metadata_path, "r", encoding="utf-8") as f:
+                        metadata = json.load(f)
+                    column_line = metadata.get("columnLine", 0)
+                except Exception as e:
+                    print(f"Metadata 로드 오류: {e}")
+
             try:
-                df = pd.read_excel(file_path)
+                # openpyxl로 워크북 로드
+                workbook = openpyxl.load_workbook(file_path, data_only=True)
+                
+                # "집행내역" 시트 확인
+                if "집행내역" not in workbook.sheetnames:
+                    return JsonResponse({
+                        'status': 'error',
+                        'data': None,
+                        'message': 'Excel 파일에 "집행내역" 시트가 없습니다. 시트 이름을 확인해주세요.',
+                        'core_columns': core_columns,
+                        'actual_columns': [],
+                    }, status=400, safe=False, json_dumps_params={'ensure_ascii': False})
+                
+                worksheet = workbook["집행내역"]
+                
+                # 헤더 행 결정 (columnLine 기준)
+                header_row = column_line + 1 if column_line >= 0 else 1
+                
+                # 헤더 읽기
+                headers = []
+                for col_idx in range(1, worksheet.max_column + 1):
+                    cell_value = worksheet.cell(row=header_row, column=col_idx).value
+                    if cell_value is not None:
+                        headers.append(str(cell_value).strip())
+                    else:
+                        headers.append(f"Column_{col_idx}")
+                
+                # 데이터 읽기 (헤더 다음 행부터)
+                data_rows = []
+                for row_idx in range(header_row + 1, worksheet.max_row + 1):
+                    row_data = {}
+                    has_data = False
+                    
+                    for col_idx, header in enumerate(headers, 1):
+                        cell_value = worksheet.cell(row=row_idx, column=col_idx).value
+                        if cell_value is not None:
+                            has_data = True
+                            row_data[header] = cell_value
+                        else:
+                            row_data[header] = None
+                    
+                    # 빈 행이 아닌 경우만 추가
+                    if has_data:
+                        data_rows.append(row_data)
+                
+                # DataFrame과 유사한 구조로 변환
+                actual_columns = headers
+                
             except Exception as e:
                 return JsonResponse({
                     'status': 'error',
@@ -279,46 +450,29 @@ def read_xlsx(request):
                     'actual_columns': [],
                 }, status=500, safe=False, json_dumps_params={'ensure_ascii': False})
 
-            df.columns = df.columns.str.strip()
-            df = df.replace({np.nan: None})
-
             # 핵심 컬럼이 없으면 생성
             for col in core_columns:
-                if col not in df.columns:
-                    df[col] = None
+                if col not in actual_columns:
+                    actual_columns.append(col)
+                    # 모든 데이터 행에 해당 컬럼 추가
+                    for row_data in data_rows:
+                        row_data[col] = None
 
-            progress = calculate_progress(df)
-
-            metadata_path = os.path.join(UPLOAD_DIR, folderName, "metadata.json")
-            if os.path.exists(metadata_path):
-                try:
-                    with open(metadata_path, "r", encoding="utf-8") as f:
-                        metadata = json.load(f)
-                    metadata["progress"] = progress
-                    metadata["lastModified"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    with open(metadata_path, "w", encoding="utf-8") as f:
-                        json.dump(metadata, f, ensure_ascii=False, indent=4)
-                except Exception as e:
-                    print(f"Metadata 업데이트 오류: {e}")
-
-            actual_columns = list(df.columns)
-            
             # 핵심 컬럼 중 없는 것들 체크
-            missing_core = [col for col in core_columns if col not in actual_columns]
+            missing_core = [col for col in core_columns if col not in [h for h in headers if h in actual_columns]]
             if missing_core:
                 return JsonResponse({
                     'status': 'warning',
                     'message': f'핵심 컬럼이 누락되었습니다: {", ".join(missing_core)}. 자동으로 생성됩니다.',
-                    'data': df.to_dict(orient='records'),
+                    'data': data_rows,
                     'core_columns': core_columns,
                     'actual_columns': actual_columns,
                     'missing_core': missing_core
                 }, status=200, safe=False, json_dumps_params={'ensure_ascii': False})
 
-            data = df.to_dict(orient='records')
             return JsonResponse({
                 'status': 'success',
-                'data': data,
+                'data': data_rows,
                 'message': '엑셀 파일을 성공적으로 읽었습니다.',
                 'core_columns': core_columns,
                 'actual_columns': actual_columns,
@@ -366,21 +520,60 @@ def save_xlsx(request):
                     row["검토사항"] = str(review)
 
             file_path = os.path.join(UPLOAD_DIR, folder_name, xlsx_file)
-
-            # DataFrame으로 변환 후 저장
-            df = pd.DataFrame(data)
-            df.to_excel(file_path, index=False)
-
-            # metadata.json 업데이트
             metadata_path = os.path.join(UPLOAD_DIR, folder_name, "metadata.json")
+
+            # 메타데이터에서 columnLine 정보 가져오기
+            column_line = 0
             if os.path.exists(metadata_path):
                 with open(metadata_path, "r", encoding="utf-8") as f:
                     metadata = json.load(f)
+                column_line = metadata.get("columnLine", 0)
             else:
                 metadata = {}
 
+            # DataFrame 생성
+            df = pd.DataFrame(data)
+            
+            # columnLine 정보에 따라 저장 방식 결정
+            if os.path.exists(file_path):
+                # 기존 파일 구조 유지하면서 데이터만 업데이트
+                workbook = openpyxl.load_workbook(file_path)
+                
+                # "집행내역" 시트 확인
+                if "집행내역" not in workbook.sheetnames:
+                    return JsonResponse({"status": "error", "message": "Excel 파일에 '집행내역' 시트가 없습니다. 시트 이름을 확인해주세요."}, status=400)
+                
+                worksheet = workbook["집행내역"]
+
+                # 기존 데이터 영역 삭제 (헤더 아래부터)
+                max_row = worksheet.max_row
+                if max_row > column_line + 1:
+                    worksheet.delete_rows(column_line + 2, max_row - column_line - 1)
+                
+                # 새 데이터 입력 (헤더 다음 행부터)
+                for row_idx, (_, row_data) in enumerate(df.iterrows()):
+                    for col_idx, value in enumerate(row_data):
+                        worksheet.cell(
+                            row=column_line + 2 + row_idx,
+                            column=col_idx + 1,
+                            value=value
+                        )
+                
+                workbook.save(file_path)
+
+            # openpyxl로 진행도 계산
+            try:
+                workbook = openpyxl.load_workbook(file_path, data_only=True)
+                if "집행내역" in workbook.sheetnames:
+                    worksheet = workbook["집행내역"]
+                    metadata["progress"] = calculate_progress(worksheet, column_line)
+                else:
+                    metadata["progress"] = 0
+            except Exception as e:
+                print(f"진행도 계산 오류: {e}")
+                metadata["progress"] = 0
+
             metadata["lastModified"] = last_modified or datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            metadata["progress"] = calculate_progress(df)
 
             with open(metadata_path, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, ensure_ascii=False, indent=4)
