@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from .views import (
     list_files, list_rules, download_file, upload_files, read_xlsx, save_xlsx, download_rule_zip,
-    save_rule, update_rule_name, delete_file, delete_rule, read_contact_info, upload_rules
+    save_rule, update_rule_name, delete_file, delete_rule, upload_rules
 )
 
 urlpatterns = [
@@ -35,5 +35,4 @@ urlpatterns = [
     path('api/update_rule_name/', update_rule_name, name='update_rule_name'),
     path('api/delete_file/<str:folder_name>/', delete_file, name='delete_file'),
     path('api/delete_rule/<str:folder_name>/', delete_rule, name='delete_rule'),
-    path("api/read_contact_info/", read_contact_info, name="read_contact_info"),
 ]
