@@ -147,16 +147,15 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
 
   const TableDrawerRef = useRef();
 
-  const columns = [
-    { label: '집행실행일자', width: 90 },
-    { label: '증빙구분', width: 105 },
-    { label: '집행용도', width: 80 },
-    { label: '비목명', width: 80 },
-    { label: '세목명', width: 105 },
-    { label: '거래처명', width: 80 },
-    { label: '예금주명', width: 80 },
-    { label: '집행금액', width: 80 },
-  ];
+  const columns = tableData.length > 0
+    ? Object.keys(tableData[0])
+        .filter(label => label !== '_originalIndex') // 인덱스 제외
+        .filter(label => !['검토사항', '취소사유', '답변', '메모', '보완사항'].includes(label)) // 특정 컬럼 제외
+        .map(label => ({
+          label,
+          width: label === 'N' ? 50 : 110 // 기본값
+        }))
+    : [];
 
   useEffect(() => {
     if (!open) return;
