@@ -116,9 +116,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
     return [];
   };
 
-  const [checkedDocuments, setCheckedDocuments] = useState(
-    toDocArray(tableData[initialIndex]?.['검토사항'])
-  );
+  const [checkedDocuments, setCheckedDocuments] = useState([]);
 
   useEffect(() => {
     if (open) setSelectedIndex(initialIndex);
@@ -126,9 +124,9 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
 
   // selectedIndex(행 이동)될 때만 checkedDocuments를 첫 번째로 초기화
   useEffect(() => {
-    const row = tableData[selectedIndex];
+    const row = sortedData[selectedIndex];
     setCheckedDocuments(toDocArray(row?.['검토사항']));
-  }, [selectedIndex, tableData]); 
+  }, [selectedIndex, sortedData]); 
 
   // useCallback으로 감싸기
   const handlePrev = useCallback(() => {
@@ -272,7 +270,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
               <>
                 <DocumentList
                   data={getCategoryDataFromRow(row, selectedCategoryRule)}
-                  selectedIndex={selectedIndex}
+                  selectedIndex={row._originalIndex}
                   checkedDocuments={checkedDocuments}
                 />
                 <Section>
@@ -292,7 +290,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
                     label="메모"
                     placeholder="메모를 입력해주세요"
                     value={row['메모'] ?? ''}
-                    onChange={e => handleMemoChange(selectedIndex, e.target.value)}
+                    onChange={e => handleMemoChange(row._originalIndex, e.target.value)}
                     ref={memoInputRef}
                     onFocus={() => setIsEditing(true)}
                     onBlur={() => setIsEditing(false)}
@@ -301,7 +299,7 @@ const TableDrawer = ({ open = false, width = 750, indexes, initialIndex, onClose
                     label="보완사항"
                     placeholder="보완사항을 입력해주세요"
                     value={row['보완사항'] ?? ''}
-                    onChange={e => handleNoteChange(selectedIndex, e.target.value)}
+                    onChange={e => handleNoteChange(row._originalIndex, e.target.value)}
                     ref={noteInputRef}
                     onFocus={() => setIsEditing(true)}
                     onBlur={() => setIsEditing(false)}
