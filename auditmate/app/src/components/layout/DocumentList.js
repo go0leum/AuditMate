@@ -115,6 +115,12 @@ const DocumentList = ({ data, selectedIndex, checkedDocuments }) => {
   // 번호 입력 로직: 1~9, 0(10), +1~+9(11~19), +0(20)
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // INPUT/TEXTAREA에 포커스가 있을 때는 DocumentList 키 이벤트 무시
+      if (document.activeElement.tagName === 'INPUT' || 
+          document.activeElement.tagName === 'TEXTAREA') {
+        return;
+      }
+      
       if (e.key === '+') {
         inputBuffer.current = '+';
         return;
