@@ -1,5 +1,9 @@
 # AuditMate
 
+![AuditMate Banner](assets/Gemini_Generated_Image_c9gbsxc9gbsxc9gb.png)
+
+[🚀 테스트 바로가기](https://auditmate-793615282246.asia-northeast3.run.app/)
+
 **AuditMate**는 회계 업무 중 반복적이고 규칙 기반(rule-based) 작업을 자동화하기 위한 도구입니다.
 회계사 선배님의 실무 경험에서 비롯된 실제 니즈를 바탕으로 설계되었으며,
 기업의 회계 서류를 분석하고, 미흡 내역을 정리해 전달하는 업무 프로세스를 지원합니다.
